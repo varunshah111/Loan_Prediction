@@ -56,7 +56,13 @@ xkabledplyhead(loanpredict)
 xkablesummary(loanpredict)
 ```
 #### Basic Statistics
+```{r}
+mean(loanpredict$Income)
+```
 
+
+```{r}
+```
 #### Correlations and Tests
 
 ### Normality check/test
