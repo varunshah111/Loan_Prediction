@@ -58,6 +58,7 @@ xkablesummary(loanpredict)
 #### Basic Statistics
 ```{r}
 mean(loanpredict$Income)
+mean(loanpredict$Age)
 ```
 
 
