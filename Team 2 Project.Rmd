@@ -317,6 +317,8 @@ FINAL COMMENTARY
 
 CODE THAT MIGHT HELP:
 INLINE:
+This will call the p-value from whatever your test was:
+`r ttest2sample_gre$p.value`
 
 R:
 ```{r pressure, echo=FALSE}
