@@ -62,6 +62,7 @@ xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction"
     
 Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loandpredict$income)` Rupees and a maximum of `r max(loanpredict$income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately $\$$`r round(min(loandpredict$income)*0.013, digits=2)` and the maximum is approximately $\$$`r round(max(loandpredict$income)*0.013, digits=2)`.
 
+
 Before we continue further, let's subset our data depending on if the individual defaulted on their loan or not.
 
 ```{r}
