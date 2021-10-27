@@ -1,0 +1,5 @@
+"0",""
+"0","#linearmodel1$residuals"
+"0",""
+"0","trial <- anova(linearmodel1, linearmodel2,linearmodel3)"
+"0","xkabledply(trial,title = ""ANOVA comparison between the models"")"

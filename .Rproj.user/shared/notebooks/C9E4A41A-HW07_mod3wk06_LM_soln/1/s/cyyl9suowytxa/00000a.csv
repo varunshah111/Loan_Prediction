@@ -1,0 +1,9 @@
+"0","#str(bike16)"
+"0","# loadPkg(""corrplot"")"
+"0","corbike = corbike16[6:10,6:10]"
+"0","# corrplot(corbike, type = ""lower"")"
+"0","# corrplot(corbike, type = ""upper"", method = ""number"")"
+"0","corrplot.mixed(corbike)"
+"2","Error in corrplot.mixed(corbike) : 
+  could not find function ""corrplot.mixed""
+"

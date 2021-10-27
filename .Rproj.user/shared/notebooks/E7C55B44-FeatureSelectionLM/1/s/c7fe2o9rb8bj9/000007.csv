@@ -1,0 +1,4 @@
+"0","# a: intercept; b: slope, "
+"0","# lty: line-type (0=blank, 1=solid (default), 2=dashed, 3=dotted, 4=dotdash, 5=longdash, 6=twodash) "
+"0","#"
+"0","# this output gives the list of variables and their abbreviations"

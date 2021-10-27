@@ -1,0 +1,7 @@
+"0","regnonlin.back <- regsubsets(Salary~(AtBat+Hits+Walks+Runs+RBI)^2+League:Division, data = hittersC, method = ""backward"", nvmax = 10)"
+"2","Warning in leaps.setup(x, y, wt = wt, nbest = nbest, nvmax = nvmax, force.in = force.in,  :"
+"2","
+ "
+"2"," 1  linear dependencies found
+"
+"0","plot(regnonlin.back, scale = ""adjr2"", main = ""Adjusted R^2"")"

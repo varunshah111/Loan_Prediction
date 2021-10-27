@@ -1,0 +1,2 @@
+"0","# check"
+"0","xkabledply( table(mtc$cyl,mtc$gear), title = ""Contingency table: gear vs cyl"" )"

@@ -1,0 +1,7 @@
+"0","# 1. Answer each question using in words/paragraph. "
+"0","# 2. DO NOT use comments inside code blocks (like here) to answer anything. Those are for notes between coders/self. They "
+"0","# will be ignored, and not counted as answers. "
+"0","# 3. Keep the line/option    knitr::opts_chunk$set(warning = F, results = ""hide"", message = F)"
+"0","# You can temporarily turn this on/off and use other option while you are working on the homework if it helps. "
+"0","# The submitted work should have this option selected instead."
+"0","# 4. All charts/graphs/tables should have appropriate captions. "

@@ -1,0 +1,2 @@
+"0","# In the ""leaps"" package, we can use scale=c(""bic"",""Cp"",""adjr2"",""r2"")"
+"0","plot(reg.best10, scale = ""bic"", main = ""BIC"")"

@@ -1,0 +1,41 @@
+"0","loadPkg(""leaps"")"
+"2","Installing package into ‘C:/Users/Ricardo Diaz/Documents/R/win-library/4.1’
+(as ‘lib’ is unspecified)
+"
+"2","also installing the dependency ‘biglm’
+
+"
+"2","trying URL 'http://cran.us.r-project.org/bin/windows/contrib/4.1/biglm_0.9-2.1.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 81239 bytes (79 KB)
+"
+"2","downloaded 79 KB
+
+"
+"2","trying URL 'http://cran.us.r-project.org/bin/windows/contrib/4.1/leaps_3.1.zip'
+"
+"2","Content type 'application/zip'"
+"2"," length 103022 bytes (100 KB)
+"
+"2","downloaded 100 KB
+
+"
+"1","package ‘biglm’ successfully unpacked and MD5 sums checked
+"
+"1","package ‘leaps’ successfully unpacked and MD5 sums checked
+"
+"1","
+"
+"1",""
+"1","The downloaded binary packages are in
+	C:\Users\Ricardo Diaz\AppData\Local\Temp\RtmpUn2XX3\downloaded_packages"
+"1",""
+"1","
+"
+"2","Loading required package: leaps
+"
+"0","#This is essentially best fit "
+"0","reg.best10 <- regsubsets(Salary~. , data = hittersC, nvmax = 10, nbest = 1, method = ""exhaustive"")  # leaps::regsubsets() - Model selection by exhaustive (default) search, forward or backward stepwise, or sequential replacement"
+"0","#The plot will show the Adjust R^2 when using the variables across the bottom"
+"0","plot(reg.best10, scale = ""adjr2"", main = ""Adjusted R^2"")"

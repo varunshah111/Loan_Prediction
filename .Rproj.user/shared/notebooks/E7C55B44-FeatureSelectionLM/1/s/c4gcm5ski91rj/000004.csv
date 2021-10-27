@@ -1,0 +1,1 @@
+"0","plot(reg.back10, scale = ""bic"", main = ""BIC"")"

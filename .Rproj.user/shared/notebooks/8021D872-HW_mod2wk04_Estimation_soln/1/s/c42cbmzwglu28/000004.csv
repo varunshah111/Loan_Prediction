@@ -1,0 +1,3 @@
+"0","Adata$admit <- as.factor(Adata$admit)"
+"0","Adata$rank <- as.factor(Adata$rank)"
+"0","Adata"

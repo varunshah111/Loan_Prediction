@@ -1,0 +1,5 @@
+"0","#Selecting only values where the customer defaulted"
+"0","defaulted <- subset(loandata, Risk_Flag == 1)"
+"0",""
+"0","#Selecting only values where the customer did not default"
+"0","not_defaulted <- subset(loandata, Risk_Flag == 0)"

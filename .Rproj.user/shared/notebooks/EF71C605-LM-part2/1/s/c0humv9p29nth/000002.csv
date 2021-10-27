@@ -1,0 +1,3 @@
+"0","mixcatfit3 = lm(mpg ~ wt + cyl*gear, data = mtc)"
+"0","# xkabledply(mixcatfit3, title = paste(""Model:"", format(formula(mixcatfit3)) ) )"
+"0","xkabledply(mtcarscor)"

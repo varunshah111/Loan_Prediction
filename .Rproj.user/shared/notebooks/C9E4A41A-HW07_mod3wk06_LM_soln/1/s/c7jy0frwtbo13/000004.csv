@@ -1,0 +1,5 @@
+"0","unloadPkg(""lattice"")"
+"2","Warning:"
+"2"," ‘lattice’ namespace cannot be unloaded:
+  namespace ‘lattice’ is imported by ‘nlme’, ‘lme4’, ‘Matrix’ so cannot be unloaded
+"

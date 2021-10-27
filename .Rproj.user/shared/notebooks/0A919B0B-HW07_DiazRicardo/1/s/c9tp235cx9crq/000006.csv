@@ -1,0 +1,7 @@
+"0",""
+"0","#cor.test(bike16$Total.Users,bike16$Humidity)"
+"0","#cor.test(bike16$Total.Users,bike16$Temperature.Feels.F)"
+"0","#cor.test(bike16$Total.Users,bike16$Wind.Speed) ## NOT SURE "
+"0",""
+"0","cofi <- confint(linearmodel3, level=0.95)"
+"0","xkabledply(cofi)"

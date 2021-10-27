@@ -1,0 +1,2 @@
+"0","fit4 <- lm(mpg ~ wt+disp+cyl+hp, data = mtcars)"
+"0","xkabledply(fit4, title = paste(""Model :"", format(formula(fit4)) ) )"

@@ -1,0 +1,2 @@
+"0","mixcatfit2 = lm(mpg ~ wt*cyl + cyl:hp, data = mtc)"
+"0","xkabledply(mixcatfit2,title = paste(""Model:"", format(formula(mixcatfit2)) ) )"

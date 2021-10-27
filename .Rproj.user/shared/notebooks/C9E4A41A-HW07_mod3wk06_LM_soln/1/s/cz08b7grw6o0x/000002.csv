@@ -1,0 +1,9 @@
+"0","loadPkg(""corrplot"")"
+"2","corrplot 0.90 loaded
+"
+"0","corbike16 = cor(bike16)"
+"0","# we can try that cor(bike_final) does not work, since some columns are now categorical."
+"0",""
+"0","# corrplot(corbike16, type = ""lower"")"
+"0","# corrplot(corbike16, type = ""upper"", method = ""number"")"
+"0","corrplot.mixed(corbike16)"

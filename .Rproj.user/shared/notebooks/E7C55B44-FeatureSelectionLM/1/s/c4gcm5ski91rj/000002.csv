@@ -1,0 +1,7 @@
+"0","reg.back10 <- regsubsets(Salary~., data = hittersC, method = ""backward"", nvmax = 10, nbest = 2)"
+"2","Warning in warn.extra(rval) :"
+"2","
+ "
+"2"," model with initial (9) variables was better, and is reported
+"
+"0","plot(reg.back10, scale = ""adjr2"", main = ""Adjusted R^2"")"

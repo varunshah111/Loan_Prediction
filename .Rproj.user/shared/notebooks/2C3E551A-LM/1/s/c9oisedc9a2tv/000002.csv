@@ -1,0 +1,3 @@
+"0","# We can also add the residuals "
+"0","df.with.predfin.from.model <- add_residuals(df.with.predfin.from.model,model.final)"
+"0","head(df.with.predfin.from.model)"

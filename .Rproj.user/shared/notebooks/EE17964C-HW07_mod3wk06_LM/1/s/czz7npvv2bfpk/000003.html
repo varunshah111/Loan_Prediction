@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<style>body{background-color:white;}</style>
+<script src="lib/jquery-1.11.3/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="lib/bootstrap-3.3.5/css/cosmo.min.css" rel="stylesheet" />
+<script src="lib/bootstrap-3.3.5/js/bootstrap.min.js"></script>
+<script src="lib/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
+<script src="lib/bootstrap-3.3.5/shim/respond.min.js"></script>
+<style>h1 {font-size: 34px;}
+       h1.title {font-size: 38px;}
+       h2 {font-size: 30px;}
+       h3 {font-size: 24px;}
+       h4 {font-size: 18px;}
+       h5 {font-size: 16px;}
+       h6 {font-size: 12px;}
+       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
+       pre:not([class]) { background-color: white }</style>
+<script src="lib/kePrint-0.0.1/kePrint.js"></script>
+<link href="lib/lightable-0.0.1/lightable.css" rel="stylesheet" />
+
+</head>
+<body>
+<table class="table table-striped" style="width: auto !important; ">
+<caption>Table</caption>
+ <thead>
+  <tr>
+   <th style="text-align:left;">   </th>
+   <th style="text-align:right;"> Season </th>
+   <th style="text-align:right;"> Holiday </th>
+   <th style="text-align:right;"> Day.of.the.Week </th>
+   <th style="text-align:right;"> Working.Day </th>
+   <th style="text-align:right;"> Weather.Type </th>
+   <th style="text-align:right;"> Temperature.F </th>
+   <th style="text-align:right;"> Temperature.Feels.F </th>
+   <th style="text-align:right;"> Humidity </th>
+   <th style="text-align:right;"> Wind.Speed </th>
+   <th style="text-align:right;"> Total.Users </th>
+  </tr>
+ </thead>
+<tbody>
+  <tr>
+   <td style="text-align:left;"> Season </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> 0.0562 </td>
+   <td style="text-align:right;"> -0.0037 </td>
+   <td style="text-align:right;"> -0.0327 </td>
+   <td style="text-align:right;"> 0.0702 </td>
+   <td style="text-align:right;"> -0.5154 </td>
+   <td style="text-align:right;"> -0.5153 </td>
+   <td style="text-align:right;"> 0.0905 </td>
+   <td style="text-align:right;"> -0.0721 </td>
+   <td style="text-align:right;"> -0.2777 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Holiday </td>
+   <td style="text-align:right;"> 0.0562 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> -0.1023 </td>
+   <td style="text-align:right;"> -0.2529 </td>
+   <td style="text-align:right;"> -0.0046 </td>
+   <td style="text-align:right;"> -0.0251 </td>
+   <td style="text-align:right;"> -0.0316 </td>
+   <td style="text-align:right;"> -0.0191 </td>
+   <td style="text-align:right;"> 0.0269 </td>
+   <td style="text-align:right;"> -0.0460 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Day.of.the.Week </td>
+   <td style="text-align:right;"> -0.0037 </td>
+   <td style="text-align:right;"> -0.1023 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> 0.0368 </td>
+   <td style="text-align:right;"> 0.0383 </td>
+   <td style="text-align:right;"> -0.0004 </td>
+   <td style="text-align:right;"> -0.0123 </td>
+   <td style="text-align:right;"> -0.0588 </td>
+   <td style="text-align:right;"> 0.0078 </td>
+   <td style="text-align:right;"> 0.0599 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Working.Day </td>
+   <td style="text-align:right;"> -0.0327 </td>
+   <td style="text-align:right;"> -0.2529 </td>
+   <td style="text-align:right;"> 0.0368 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> 0.0004 </td>
+   <td style="text-align:right;"> 0.0495 </td>
+   <td style="text-align:right;"> 0.0506 </td>
+   <td style="text-align:right;"> 0.0051 </td>
+   <td style="text-align:right;"> -0.0265 </td>
+   <td style="text-align:right;"> -0.1866 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Weather.Type </td>
+   <td style="text-align:right;"> 0.0702 </td>
+   <td style="text-align:right;"> -0.0046 </td>
+   <td style="text-align:right;"> 0.0383 </td>
+   <td style="text-align:right;"> 0.0004 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> -0.2103 </td>
+   <td style="text-align:right;"> -0.2054 </td>
+   <td style="text-align:right;"> 0.6253 </td>
+   <td style="text-align:right;"> -0.0226 </td>
+   <td style="text-align:right;"> -0.3161 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Temperature.F </td>
+   <td style="text-align:right;"> -0.5154 </td>
+   <td style="text-align:right;"> -0.0251 </td>
+   <td style="text-align:right;"> -0.0004 </td>
+   <td style="text-align:right;"> 0.0495 </td>
+   <td style="text-align:right;"> -0.2103 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> 0.9841 </td>
+   <td style="text-align:right;"> -0.1393 </td>
+   <td style="text-align:right;"> -0.0327 </td>
+   <td style="text-align:right;"> 0.5518 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Temperature.Feels.F </td>
+   <td style="text-align:right;"> -0.5153 </td>
+   <td style="text-align:right;"> -0.0316 </td>
+   <td style="text-align:right;"> -0.0123 </td>
+   <td style="text-align:right;"> 0.0506 </td>
+   <td style="text-align:right;"> -0.2054 </td>
+   <td style="text-align:right;"> 0.9841 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> -0.1072 </td>
+   <td style="text-align:right;"> -0.0619 </td>
+   <td style="text-align:right;"> 0.5560 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Humidity </td>
+   <td style="text-align:right;"> 0.0905 </td>
+   <td style="text-align:right;"> -0.0191 </td>
+   <td style="text-align:right;"> -0.0588 </td>
+   <td style="text-align:right;"> 0.0051 </td>
+   <td style="text-align:right;"> 0.6253 </td>
+   <td style="text-align:right;"> -0.1393 </td>
+   <td style="text-align:right;"> -0.1072 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> -0.1369 </td>
+   <td style="text-align:right;"> -0.2706 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Wind.Speed </td>
+   <td style="text-align:right;"> -0.0721 </td>
+   <td style="text-align:right;"> 0.0269 </td>
+   <td style="text-align:right;"> 0.0078 </td>
+   <td style="text-align:right;"> -0.0265 </td>
+   <td style="text-align:right;"> -0.0226 </td>
+   <td style="text-align:right;"> -0.0327 </td>
+   <td style="text-align:right;"> -0.0619 </td>
+   <td style="text-align:right;"> -0.1369 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+   <td style="text-align:right;"> -0.0653 </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> Total.Users </td>
+   <td style="text-align:right;"> -0.2777 </td>
+   <td style="text-align:right;"> -0.0460 </td>
+   <td style="text-align:right;"> 0.0599 </td>
+   <td style="text-align:right;"> -0.1866 </td>
+   <td style="text-align:right;"> -0.3161 </td>
+   <td style="text-align:right;"> 0.5518 </td>
+   <td style="text-align:right;"> 0.5560 </td>
+   <td style="text-align:right;"> -0.2706 </td>
+   <td style="text-align:right;"> -0.0653 </td>
+   <td style="text-align:right;"> 1.0000 </td>
+  </tr>
+</tbody>
+</table> <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [["$","$"]]}})</script><script async src="https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+"0","loadPkg(""lattice"") # lattice and ggplot2 combined allow us to use the ""pairs"" function below "
+"0","pairs(bike_final)"
