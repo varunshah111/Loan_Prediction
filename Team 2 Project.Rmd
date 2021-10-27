@@ -45,6 +45,8 @@ loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented
 
 loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
 
+str(loanpredict)
+
 ```
 
 
@@ -198,29 +200,228 @@ Before we get to our statistical testing, let's confirm our quantitative variabl
 
 Let's first begin with our non-defaulted population.
 
+Package to make graphs next to each other
+```{r}
+loadPkg("gridExtra")
+
+```
+
+Checking for NA values and outliers
+```{r}
+sum(is.na(loandata$Age))
+sum(is.na(loandata$Income))
+
+outlierKD2(defaulted, Age, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(defaulted, Income, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+
+outlierKD2(not_defaulted, Age, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(not_defaulted, Income, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+
+```
+
+
+
 ANALYSIS FOR AGE
+```{r}
+
+str(loandata)
+
+ggplot(data=not_defaulted, aes(Age)) + 
+  geom_histogram( binwidth = 1,
+                 col="red", 
+                 fill="green", 
+                 alpha = .7) + 
+  labs(title="Non-defaulted Customers Age Histogram") +
+  labs(x="Age", y="Frequency") 
+
+qqnorm(not_defaulted$Age, main="Q-Q plot of Age level of Not Defaulted Customers") 
+qqline(not_defaulted$Age)
+
+```
 
 ANALYSIS FOR INCOME
 
+```{r}
+ggplot(not_defaulted, aes(y=Income)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Not_Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
+
+ggplot(data=not_defaulted, aes(Income)) + 
+  geom_histogram(col="red", 
+                 fill="green", 
+                 alpha = .7) +
+  labs(title="Non-defaulted Customers Income Histogram") +
+  labs(x="Income", y="Frequency") 
+
+qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers") 
+qqline(not_defaulted$Income)
+```
+
+
 ANALYSIS FOR EXPERIENCE
+
+```{r}
+str(loandata)
+ggplot(data=not_defaulted, aes(Experience)) + 
+  geom_histogram(binwidth = 1,
+                 col="red", 
+                 fill="green", 
+                 alpha = .7) + 
+  labs(title="Non-defaulted Experience Histogram") +
+  labs(x="Experience", y="Frequency") 
+
+ggplot(not_defaulted, aes(y=Experience)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Not_Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+
+
+#qqnorm(not_defaulted$Experience, main="Q-Q plot of Experience level of Not Defaulted Customers") 
+#qqline(not_defaulted$Experience)
+
+
+```
+
 
 ANALYSIS FOR YEARS OWNING HOME
 
+```{r}
+ggplot(data=not_defaulted, aes(CURRENT_HOUSE_YRS)) + 
+  geom_histogram(binwidth = 0.5,
+                 col="red", 
+                 fill="green", 
+                 alpha = .7) + 
+  labs(title="Non-defaulted Customers ExperienceHistogram") +
+  labs(x="House_Ownership", y="Frequency") 
+
+ggplot(not_defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Not_Defaulted Customer House_Ownership boxplot ",x="", y = "weight (lbs)")
+
+
+qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Current House Years level of Not Defaulted Customers") 
+qqline(not_defaulted$CURRENT_HOUSE_YRS)
+
+```
+
+
 ANALYSIS FOR YEARS IN CURRENT JOB
+
+```{r}
+
+ggplot(data=not_defaulted, aes(CURRENT_JOB_YRS)) + 
+  geom_histogram(binwidth = 1,
+                 col="red", 
+                 fill="green", 
+                 alpha = .7) + 
+  labs(title="Non-defaulted Job years Histogram") +
+  labs(x="House_Ownership", y="Frequency") 
+
+ggplot(not_defaulted, aes(y=CURRENT_JOB_YRS)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Not_Defaulted Job years Customer boxplot ",x="", y = "weight (lbs)")
+
+
+qqnorm(not_defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Job Years level of Not Defaulted Customers") 
+qqline(not_defaulted$CURRENT_JOB_YRS)
+
+
+```
 
 
 Now, let's assess our defaulted population.
 
 ANALYSIS FOR AGE
+```{r}
+ggplot(data=defaulted, aes(Age)) + 
+  geom_histogram( 
+                 col="red", 
+                 fill="blue", 
+                 alpha = .7) + # opacity
+  labs(title="Defaulted Customers Age Histogram") +
+  labs(x="Age", y="Frequency") 
+
+
+qqnorm(defaulted$Age, main="Q-Q plot of Age Defaulted Customers") 
+qqline(defaulted$Age)
+
+
+```
 
 ANALYSIS FOR INCOME
 
+
+```{r}
+ggplot(defaulted, aes(y=Income)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
+
+ggplot(data=defaulted, aes(Income)) + 
+  geom_histogram(binwidth= 50,col="red", 
+                 fill="green", 
+                 alpha = .7) +
+  labs(title="defaulted Customers Income Histogram") +
+  labs(x="Income", y="Frequency") 
+
+qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers") 
+qqline(not_defaulted$Income)
+
+```
+
 ANALYSIS FOR EXPERIENCE
+
+```{r}
+
+ggplot(data=defaulted, aes(Experience)) + 
+  geom_histogram(binwidth = 1,
+                 col="red", 
+                 fill="green", 
+                 alpha = .7) + 
+  labs(title="defaulted Experience Age Histogram") +
+  labs(x="Experience", y="Frequency") 
+
+ggplot(defaulted, aes(y=Experience)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+
+qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers") 
+qqline(not_defaulted$Income)
+
+
+```
+
 
 ANALYSIS FOR YEARS OWNING HOME
 
+```{r}
+
+ggplot(data=defaulted, aes(Experience)) + 
+  geom_histogram(binwidth = 1,
+                 col="red", 
+                 fill="green", 
+                 alpha = .7) + 
+  labs(title="defaulted Experience Age Histogram") +
+  labs(x="Experience", y="Frequency") 
+
+ggplot(defaulted, aes(y=Experience)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+
+
+
+```
+
 ANALYSIS FOR YEARS IN CURRENT JOB
 
+```{r}
+
+```
 
 Having confirmed that our data all follow our assumptions of normality (CHANGE THIS IF IT'S FALSE), we can now conduct our analysis to answer our posed questions.
 
