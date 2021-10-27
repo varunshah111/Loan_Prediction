@@ -446,7 +446,7 @@ ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income)
 #Output results
 ttest2sample_incomes
 ```
-Based on the Two Sample T-test of the incomes of Defaulted and Not-defaulted customers, we cannot reject the $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$ ,meaning the average incomes of defaulted v not-defaulted customers is approximately.
+Based on the Two Sample T-test of the incomes of Defaulted and Not-defaulted customers, we cannot reject the $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$ ,meaning the average incomes of defaulted v not-defaulted customers is approximatel the same. 
 
 Next, let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. We set up our home_ownership hypotheses as follows:
 $H_0$: Home Ownership Status and Loan Status are independent
