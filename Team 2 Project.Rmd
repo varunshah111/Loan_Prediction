@@ -465,7 +465,7 @@ As per usual, we will use $\alpha$ = 0.05.
 
 
 ```{r}
-ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income)
+ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income, alternative = 'less')
 #Output results
 ttest2sample_incomes
 ```
@@ -506,7 +506,7 @@ $H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
 As per usual, we will use $\alpha$ = 0.05.
 
 ```{r}
-ttest2sample_currentHome = t.test(defaulted$CURRENT_HOUSE_YRS, not_defaulted$CURRENT_HOUSE_YRS)
+ttest2sample_currentHome = t.test(defaulted$CURRENT_HOUSE_YRS, not_defaulted$CURRENT_HOUSE_YRS, alternative = 'less')
 #Output results
 ttest2sample_currentHome
 ```
@@ -536,7 +536,7 @@ $H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$
 As per usual, we will use $\alpha$ = 0.05.
 
 ```{r}
-ttest2sample_currentjob <- t.test(defaulted$CURRENT_JOB_YRS, not_defaulted$CURRENT_JOB_YRS, alternative = 'two.sided')
+ttest2sample_currentjob <- t.test(defaulted$CURRENT_JOB_YRS, not_defaulted$CURRENT_JOB_YRS)
 ttest2sample_currentjob
 ```
 
