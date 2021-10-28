@@ -198,33 +198,45 @@ Although the difference appears subtle, we can see that the boxplot for Defaulte
 
 Before we get to our statistical testing, let's confirm our quantitative variables all follow the required normality assumptions. To do that, we'll go ahead and examine a histogram and Q-Q Plot for each variables, make a visual assessment of normality, and then utilize a Shapiro-Wilk test to confirm our assumptions. We will conduct this assessment separately for Defaulted and Non-Defaulted customers to ensure that each population follows the normal distribution.
 
-Let's first begin with our non-defaulted population.
-
-Package to make graphs next to each other
-```{r}
-loadPkg("gridExtra")
-
-```
-
-Checking for NA values and outliers
-```{r}
+### Checking for NA values and outliers 
+```{r, echo=FALSE}
 sum(is.na(loandata$Age))
+sum(is.na(loandata$Income))
+sum(is.na(loandata$Experience))
+sum(is.na(loandata$Married.Single))
+sum(is.na(loandata$House_Ownership))
+sum(is.na(loandata$Car_Ownership))
+sum(is.na(loandata$CURRENT_HOUSE_YRS))
+sum(is.na(loandata$CURRENT_JOB_YRS))
 sum(is.na(loandata$Income))
 
 outlierKD2(defaulted, Age, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
 outlierKD2(defaulted, Income, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(defaulted, Experience, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
 
 outlierKD2(not_defaulted, Age, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
 outlierKD2(not_defaulted, Income, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(not_defaulted, Experience, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(not_defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+
+```
+
+## Assesment non-defaulted population.
+
+```{r, include=FALSE}
+loadPkg("gridExtra")
+## Package to make graphs next to each other
 
 ```
 
 
 
-ANALYSIS FOR AGE
+### Analysis for Age
 ```{r}
 
-str(loandata)
+#str(loandata)
+
 
 ggplot(data=not_defaulted, aes(Age)) + 
   geom_histogram(aes(y=..density..), binwidth = 10,
@@ -238,115 +250,132 @@ ggplot(data=not_defaulted, aes(Age)) +
 qqnorm(not_defaulted$Age, main="Q-Q plot of Age level of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$Age, col = 'red')
 
+
+##shapiro.test(not_defaulted$Age) sample size to big to conduct a shapiro test
+
+
 ```
 
-ANALYSIS FOR INCOME
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
+
+
+
+### Analysis for Income
 
 ```{r}
-ggplot(not_defaulted, aes(y=Income)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Not_Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
+# ggplot(not_defaulted, aes(y=Income)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
 
-ggplot(data=not_defaulted, aes(Income)) + 
-  geom_histogram(aes(y=..density..), 
-                 
-                 col="aquamarine4", 
-                 fill="aquamarine2", 
+ggplot(data=not_defaulted, aes(Income)) +
+  geom_histogram(aes(y=..density..),
+
+                 col="dodgerblue4",
+                 fill="dodgerblue2",
                  alpha = .7) +
   labs(title="Non-defaulted Customers Income Histogram") +
-  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Income, na.rm = TRUE), sd = sd(not_defaulted$Income, na.rm = TRUE))) + 
-  labs(x="Income", y="Frequency") 
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Income, na.rm = TRUE), sd = sd(not_defaulted$Income, na.rm = TRUE))) +
+  labs(x="Income", y="Frequency")
 
 qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$Income, col = 'red')
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
 
-
-ANALYSIS FOR EXPERIENCE
+### Analysis for Experience
 
 ```{r}
-str(loandata)
+#str(loandata)
+
+
 ggplot(data=not_defaulted, aes(Experience)) + 
   geom_histogram(aes(y=..density..), binwidth = 4,
-                 col="aquamarine4", 
-                 fill="aquamarine2", 
+                 col="gold4", 
+                 fill="gold2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Experience), sd = sd(not_defaulted$Experience))) + 
   labs(title="Non-defaulted Experience Histogram") +
   labs(x="Experience", y="Frequency") 
 
-ggplot(not_defaulted, aes(y=Experience)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Not_Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+# ggplot(not_defaulted, aes(y=Experience)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
 
 
-qqnorm(not_defaulted$Experience, main="Q-Q plot of Experience level of Not Defaulted Customers", col = 'seagreen3') 
+qqnorm(not_defaulted$Experience, main="Q-Q plot of Job Experience of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$Experience, col = 'red')
 
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+THE QQplot clearly shows that Experience is discrete data.
 
-
-ANALYSIS FOR YEARS OWNING HOME
+### Analysis for Current House Years
 
 ```{r}
 ggplot(data=not_defaulted, aes(CURRENT_HOUSE_YRS)) + 
   geom_histogram(aes(y=..density..), binwidth = 1,
-                 col="aquamarine4", 
-                 fill="aquamarine2", 
+                 col="brown4", 
+                 fill="brown2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(not_defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
   labs(title="Non-defaulted Customers years in Current Home Histogram") +
   labs(x='Years in Current Home', y="Frequency") 
 
-ggplot(not_defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Not_Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
+# ggplot(not_defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
 
 
-qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home level of Not Defaulted Customers", col = 'seagreen3') 
+qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+QQplot shows that CURRENT_HOUSE_ YRS for non defaulted clearly is discrete data.
 
 
-ANALYSIS FOR YEARS IN CURRENT JOB
+### Analysis for Current Job Years
 
 ```{r}
 
 ggplot(data=not_defaulted, aes(CURRENT_JOB_YRS)) + 
   geom_histogram(aes(y=..density..), binwidth = 1,
-                 col="aquamarine4", 
-                 fill="aquamarine2", 
+                 col="burlywood4", 
+                 fill="burlywood2", 
                  alpha = .7) + 
-  labs(title="Non-defaulted Years in Current Job Histogram") +
+  labs(title="Non-defaulted Years in Current Job Years Histogram") +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
   labs(x="Years in Current Job", y="Frequency") 
 
-ggplot(not_defaulted, aes(y=CURRENT_JOB_YRS)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Not_Defaulted Years in Current Job boxplot ",x="", y = "weight (lbs)")
+# ggplot(not_defaulted, aes(y=CURRENT_JOB_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Years in Current Job boxplot ",x="", y = "weight (lbs)")
+# 
 
-
-qqnorm(not_defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job,level of Not Defaulted Customers", col = 'seagreen3') 
+qqnorm(not_defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job Years of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$CURRENT_JOB_YRS, col = 'red')
 
 
 ```
+This histogram shows a normal distribution with a  very slight negative skew 
+QQplot shows that CURRENT_JOB_ YRS clearly is discrete data.
 
 
-Now, let's assess our defaulted population.
+## Assesment defaulted population.
 
-ANALYSIS FOR AGE
+### Analysis for Age
 ```{r}
 ggplot(data=defaulted, aes(Age)) + 
   geom_histogram(aes(y=..density..),
                  binwidth = 10,
-                 col="darkblue", 
-                 fill="cornflowerblue", 
+                 col="darkolivegreen4", 
+                 fill="darkolivegreen2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Age, na.rm = TRUE), sd = sd(defaulted$Age, na.rm = TRUE))) + # opacity
   labs(title="Defaulted Customers Age Histogram") +
@@ -358,104 +387,193 @@ qqline(defaulted$Age, col = 'red')
 
 
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
 
-ANALYSIS FOR INCOME
+
+### Analysis for Income
 
 
 ```{r}
-ggplot(defaulted, aes(y=Income)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
+# ggplot(defaulted, aes(y=Income)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
 
-ggplot(data=defaulted, aes(Income)) + 
-  geom_histogram(aes(y=..density..), 
-                 col="darkblue", 
-                 fill="cornflowerblue", 
+ggplot(data=defaulted, aes(Income)) +
+  geom_histogram(aes(y=..density..),
+                 col="magenta4",
+                 fill="magenta2",
                  alpha = .7) +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Income, na.rm = TRUE), sd = sd(defaulted$Income, na.rm = TRUE))) +
   labs(title="defaulted Customers Income Histogram") +
-  labs(x="Income", y="Frequency") 
+  labs(x="Income", y="Frequency")
 
 qqnorm(defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$Income, col = 'red')
 
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
 
-ANALYSIS FOR EXPERIENCE
+
+### Analysis for Experience
 
 ```{r}
-
+#str(loandata)
 ggplot(data=defaulted, aes(Experience)) + 
   geom_histogram(aes(y=..density..),
                  binwidth = 5,
-                 col="darkblue", 
-                 fill="cornflowerblue", 
+                 col="darkorange4", 
+                 fill="darkorange2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Experience, na.rm = TRUE), sd = sd(defaulted$Experience, na.rm = TRUE))) +
   labs(title="defaulted Experience Histogram") +
   labs(x="Experience", y="Frequency") 
 
-ggplot(defaulted, aes(y=Experience)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+# ggplot(defaulted, aes(y=Experience)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
 
-qqnorm(defaulted$Experience, main="Q-Q plot of Years of Experience of Defaulted Customers", col = 'royalblue2') 
-qqline(defaulted$Income, col = 'red')
+qqnorm(defaulted$Experience, main="Q-Q plot of Years of Job Experience of Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$Experience, col = 'red')
 
 
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+QQplot shows that Experience clearly have discrete data.
 
-
-ANALYSIS FOR YEARS IN CURRENT HOME
+### Analysis for Years in Current home
 
 ```{r}
 
 ggplot(data=defaulted, aes(CURRENT_HOUSE_YRS)) + 
   geom_histogram(aes(y=..density..),
                  binwidth = 1,
-                 col="darkblue", 
-                 fill="cornflowerblue", 
+                 col="ivory4", 
+                 fill="ivory2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
   labs(title="defaulted Years in Current Home Histogram") +
   labs(x="Experience", y="Frequency") 
 
-ggplot(defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
+# ggplot(defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
 
 qqnorm(defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home, for Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+QQplot shows that CURRENT_HOUSE_ YRS for defaulted clearly is discrete data.
 
-ANALYSIS FOR YEARS IN CURRENT JOB
+### Analysis for Years in Current Job 
 
 ```{r}
 ggplot(data=defaulted, aes(CURRENT_JOB_YRS)) + 
   geom_histogram(aes(y=..density..),
                  binwidth = 1,
-                 col="darkblue", 
-                 fill="cornflowerblue", 
+                 col="lightpink4", 
+                 fill="lightpink2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
   labs(title="defaulted - Years in Current Job Histogram") +
   labs(x="Experience", y="Frequency") 
 
-ggplot(defaulted, aes(y=CURRENT_JOB_YRS)) + 
-  geom_boxplot() + 
-  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Defaulted Customer Years in Current Job boxplot ",x="", y = "weight (lbs)")
+# ggplot(defaulted, aes(y=CURRENT_JOB_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Years in Current Job boxplot ",x="", y = "weight (lbs)")
 
 qqnorm(defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job, for Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$CURRENT_JOB_YRS, col = 'red')
 ```
+The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The QQplot clearly shows CURRENT_JOB_YRS is discrete data
 
-Having confirmed that our data all follow our assumptions of normality (CHANGE THIS IF IT'S FALSE), we can now conduct our analysis to answer our posed questions.
+Having confirmed that our data all follow our assumptions of normality (CHANGE THIS IF IT'S FALSE), we can now conduct our analysis to answer our posted questions.
+
+##Qualitative Data Tests
+
+First, lets deal with our qualitative data.
+
+### Chi-squartest Test 
+
+Let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. We set up our home_ownership hypotheses as follows:
+$H_0$: Home Ownership Status and Loan Status are independent
+$H_1$: Home Ownership Status and Loan Status are dependent
+
+As per usual, we will use $\alpha$ = 0.05.
+
+
+```{r, eval=F}
+library(lmtest)
+library(grid)
+library(vcd)
+
+mosaic(~ Risk_Flag + House_Ownership ,
+  direction = c("v", "h"),
+  data = loandata,
+  shade = TRUE
+)
+
+## This is chi squared visual graph, can be usefull for when we have to write the 10 page
+
+```
+
+```{r}
+
+#contigeny table
+contable_housing = table(loandata$House_Ownership, loandata$Risk_Flag)
+xkabledply(contable_housing, title = 'Contigency table for Risk Flag vs House Ownership ')
+chitest_housing = chisq.test(contable_housing)
+#To output results
+chitest_housing
+```
+
+This Chi-squared test shows that `chitest_housing$p.value` = `r chitest_housing$p.value` which means is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we reject our $H_0$ and accept $H1_0$ Home Ownership Status and Loan Status are dependent. Knowing the value of one variables helps to predict the value of the other variable.
+
+
+Next, we'll assess if marital status has an impact on default status. We set up our marital status hypotheses as follows:
+$H_0$: Marital Status and Loan Status are independent
+$H_1$: Marital Status and Loan Status not independent
+
+```{r, eval=F}
+
+
+mosaic(~ Risk_Flag + Married.Single ,
+  direction = c("v", "h"),
+  data = loandata,
+  shade = TRUE
+)
+
+## Not including it 
+
+```
+
+
+As per usual, we will use $\alpha$ = 0.05.
+
+```{r}
+
+contable_marital = table(loandata$Married.Single, loandata$Risk_Flag)
+xkabledply(contable_marital, title = 'Contigency table for Risk Flag vs Marital Status ')
+chitest_marital = chisq.test(contable_marital)
+chitest_marital
+```
+
+When we examine the Chi-squared test shows of Risk Flag vs Marital the `chitest_marital$p.value` = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
+
+
+###Quantitative Variables
+
+## T-test
+
+Now we'll move back to our quantitative variables.
 
 First, let's analyze the income levels and if they differ significantly for defaulted vs. non-defaulted customers. Given that we are trying to assess if customers who have defaulted have lower incomes than those who haven't, we would set up our hypothesis test as follows:
 $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$
@@ -472,34 +590,8 @@ ttest2sample_incomes
 Here we fail to reject the Null Hypothesis $H_0$. The average of incomes of both defaulted and non-defaulted customers is approximately the same since the p-value: `r format(ttest2sample_incomes$p.value, scientific=FALSE, digits = 3)` is greater than $\alpha$ here and we cannot adopt the alternate Hypothesis $H_1$. 
 
 
-Next, let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. We set up our home_ownership hypotheses as follows:
-$H_0$: Home Ownership Status and Loan Status are independent
-$H_1$: Home Ownership Status and Loan Status not independent
 
-As per usual, we will use $\alpha$ = 0.05.
-
-
-```{r}
-#To run test
-chitest_housing = chisq.test(cont_table_housing)
-#To output results
-chitest_housing
-```
-INSERT COMMENTARY (USE THE RESULTS OUTPUT ABOVE TO GUAGE COMMENTARY, BUT USE INLINE TEXT FOR VALUES)
-
-Next, we'll assess if marital status has an impact on default status. We set up our marital status hypotheses as follows:
-$H_0$: Marital Status and Loan Status are independent
-$H_1$: Marital Status and Loan Status not independent
-
-As per usual, we will use $\alpha$ = 0.05.
-
-```{r}
-TEST 
-```
-
-INSERT COMMENTARY
-
-Now we'll move back to our quantitative variables and asses if years in current home is significantly different for those who have defaulted vs not defaulted. We set up our hypotheses for years in current home as follows:
+Now lets asses if years in current home is significantly different for those who have defaulted vs not defaulted. We set up our hypotheses for years in current home as follows:
 $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$
 $H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
 
@@ -591,6 +683,6 @@ ttest2sample_gpa = t.test(rejected$gpa,admitted$gpa)
 #Output results
 ttest2sample_gpa
 
-Chi-square test of independence:
-  chitest = chisq.test(cont_table)
+# Chi-square test of independence:
+#   chitest = chisq.test(cont_table)
 ```
