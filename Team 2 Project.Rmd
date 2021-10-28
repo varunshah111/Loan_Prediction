@@ -227,7 +227,7 @@ ANALYSIS FOR AGE
 str(loandata)
 
 ggplot(data=not_defaulted, aes(Age)) + 
-  geom_histogram(aes(y=..density..), binwidth = 1,
+  geom_histogram(aes(y=..density..), binwidth = 10,
                  col="aquamarine4", 
                  fill="aquamarine2", 
                  alpha = .7) + 
@@ -235,8 +235,8 @@ ggplot(data=not_defaulted, aes(Age)) +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Age, na.rm = TRUE), sd = sd(not_defaulted$Age, na.rm = TRUE))) + 
   labs(x="Age", y="Frequency") 
 
-qqnorm(not_defaulted$Age, main="Q-Q plot of Age level of Not Defaulted Customers") 
-qqline(not_defaulted$Age)
+qqnorm(not_defaulted$Age, main="Q-Q plot of Age level of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$Age, col = 'red')
 
 ```
 
@@ -249,15 +249,17 @@ ggplot(not_defaulted, aes(y=Income)) +
   labs(title="Not_Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
 
 ggplot(data=not_defaulted, aes(Income)) + 
-  geom_histogram(aes(y=..density..), col="aquamarine4", 
+  geom_histogram(aes(y=..density..), 
+                 
+                 col="aquamarine4", 
                  fill="aquamarine2", 
                  alpha = .7) +
   labs(title="Non-defaulted Customers Income Histogram") +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Income, na.rm = TRUE), sd = sd(not_defaulted$Income, na.rm = TRUE))) + 
   labs(x="Income", y="Frequency") 
 
-qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers") 
-qqline(not_defaulted$Income)
+qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$Income, col = 'red')
 ```
 
 
@@ -266,7 +268,7 @@ ANALYSIS FOR EXPERIENCE
 ```{r}
 str(loandata)
 ggplot(data=not_defaulted, aes(Experience)) + 
-  geom_histogram(aes(y=..density..), binwidth = 1,
+  geom_histogram(aes(y=..density..), binwidth = 4,
                  col="aquamarine4", 
                  fill="aquamarine2", 
                  alpha = .7) + 
@@ -280,9 +282,8 @@ ggplot(not_defaulted, aes(y=Experience)) +
   labs(title="Not_Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
 
 
-#qqnorm(not_defaulted$Experience, main="Q-Q plot of Experience level of Not Defaulted Customers") 
-#qqline(not_defaulted$Experience)
-
+qqnorm(not_defaulted$Experience, main="Q-Q plot of Experience level of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$Experience, col = 'red')
 
 ```
 
@@ -291,22 +292,22 @@ ANALYSIS FOR YEARS OWNING HOME
 
 ```{r}
 ggplot(data=not_defaulted, aes(CURRENT_HOUSE_YRS)) + 
-  geom_histogram(aes(y=..density..), binwidth = 0.5,
-                 col="red", 
-                 fill="green", 
+  geom_histogram(aes(y=..density..), binwidth = 1,
+                 col="aquamarine4", 
+                 fill="aquamarine2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(not_defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
-  labs(title="Non-defaulted Customers ExperienceHistogram") +
-  labs(x="House_Ownership", y="Frequency") 
+  labs(title="Non-defaulted Customers years in Current Home Histogram") +
+  labs(x='Years in Current Home', y="Frequency") 
 
 ggplot(not_defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
   geom_boxplot() + 
   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Not_Defaulted Customer House_Ownership boxplot ",x="", y = "weight (lbs)")
+  labs(title="Not_Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
 
 
-qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Current House Years level of Not Defaulted Customers") 
-qqline(not_defaulted$CURRENT_HOUSE_YRS)
+qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home level of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 ```
 
@@ -317,21 +318,21 @@ ANALYSIS FOR YEARS IN CURRENT JOB
 
 ggplot(data=not_defaulted, aes(CURRENT_JOB_YRS)) + 
   geom_histogram(aes(y=..density..), binwidth = 1,
-                 col="red", 
-                 fill="green", 
+                 col="aquamarine4", 
+                 fill="aquamarine2", 
                  alpha = .7) + 
-  labs(title="Non-defaulted Job years Histogram") +
+  labs(title="Non-defaulted Years in Current Job Histogram") +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
-  labs(x="House_Ownership", y="Frequency") 
+  labs(x="Years in Current Job", y="Frequency") 
 
 ggplot(not_defaulted, aes(y=CURRENT_JOB_YRS)) + 
   geom_boxplot() + 
   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Not_Defaulted Job years Customer boxplot ",x="", y = "weight (lbs)")
+  labs(title="Not_Defaulted Years in Current Job boxplot ",x="", y = "weight (lbs)")
 
 
-qqnorm(not_defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Job Years level of Not Defaulted Customers") 
-qqline(not_defaulted$CURRENT_JOB_YRS)
+qqnorm(not_defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job,level of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$CURRENT_JOB_YRS, col = 'red')
 
 
 ```
@@ -343,7 +344,8 @@ ANALYSIS FOR AGE
 ```{r}
 ggplot(data=defaulted, aes(Age)) + 
   geom_histogram(aes(y=..density..),
-                 col="red", 
+                 binwidth = 10,
+                 col="darkblue", 
                  fill="cornflowerblue", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Age, na.rm = TRUE), sd = sd(defaulted$Age, na.rm = TRUE))) + # opacity
@@ -351,8 +353,8 @@ ggplot(data=defaulted, aes(Age)) +
   labs(x="Age", y="Frequency") 
 
 
-qqnorm(defaulted$Age, main="Q-Q plot of Age Defaulted Customers") 
-qqline(defaulted$Age)
+qqnorm(defaulted$Age, main="Q-Q plot of Age Defaulted Customers", col = 'royalblue2' ) 
+qqline(defaulted$Age, col = 'red')
 
 
 ```
@@ -368,16 +370,15 @@ ggplot(defaulted, aes(y=Income)) +
 
 ggplot(data=defaulted, aes(Income)) + 
   geom_histogram(aes(y=..density..), 
-                 binwidth= 50,
-                 col="red", 
-                 fill="green", 
+                 col="darkblue", 
+                 fill="cornflowerblue", 
                  alpha = .7) +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Income, na.rm = TRUE), sd = sd(defaulted$Income, na.rm = TRUE))) +
   labs(title="defaulted Customers Income Histogram") +
   labs(x="Income", y="Frequency") 
 
-qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers") 
-qqline(not_defaulted$Income)
+qqnorm(defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$Income, col = 'red')
 
 ```
 
@@ -386,11 +387,13 @@ ANALYSIS FOR EXPERIENCE
 ```{r}
 
 ggplot(data=defaulted, aes(Experience)) + 
-  geom_histogram(binwidth = 1,
-                 col="red", 
-                 fill="green", 
+  geom_histogram(aes(y=..density..),
+                 binwidth = 5,
+                 col="darkblue", 
+                 fill="cornflowerblue", 
                  alpha = .7) + 
-  labs(title="defaulted Experience Age Histogram") +
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Experience, na.rm = TRUE), sd = sd(defaulted$Experience, na.rm = TRUE))) +
+  labs(title="defaulted Experience Histogram") +
   labs(x="Experience", y="Frequency") 
 
 ggplot(defaulted, aes(y=Experience)) + 
@@ -398,30 +401,34 @@ ggplot(defaulted, aes(y=Experience)) +
   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
   labs(title="Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
 
-qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers") 
-qqline(not_defaulted$Income)
+qqnorm(defaulted$Experience, main="Q-Q plot of Years of Experience of Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$Income, col = 'red')
 
 
 ```
 
 
-ANALYSIS FOR YEARS OWNING HOME
+ANALYSIS FOR YEARS IN CURRENT HOME
 
 ```{r}
 
-ggplot(data=defaulted, aes(Experience)) + 
-  geom_histogram(binwidth = 1,
-                 col="red", 
-                 fill="green", 
+ggplot(data=defaulted, aes(CURRENT_HOUSE_YRS)) + 
+  geom_histogram(aes(y=..density..),
+                 binwidth = 1,
+                 col="darkblue", 
+                 fill="cornflowerblue", 
                  alpha = .7) + 
-  labs(title="defaulted Experience Age Histogram") +
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
+  labs(title="defaulted Years in Current Home Histogram") +
   labs(x="Experience", y="Frequency") 
 
-ggplot(defaulted, aes(y=Experience)) + 
+ggplot(defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
   geom_boxplot() + 
   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
-  labs(title="Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+  labs(title="Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
 
+qqnorm(defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home, for Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 
 ```
@@ -429,7 +436,23 @@ ggplot(defaulted, aes(y=Experience)) +
 ANALYSIS FOR YEARS IN CURRENT JOB
 
 ```{r}
+ggplot(data=defaulted, aes(CURRENT_JOB_YRS)) + 
+  geom_histogram(aes(y=..density..),
+                 binwidth = 1,
+                 col="darkblue", 
+                 fill="cornflowerblue", 
+                 alpha = .7) + 
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
+  labs(title="defaulted - Years in Current Job Histogram") +
+  labs(x="Experience", y="Frequency") 
 
+ggplot(defaulted, aes(y=CURRENT_JOB_YRS)) + 
+  geom_boxplot() + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+  labs(title="Defaulted Customer Years in Current Job boxplot ",x="", y = "weight (lbs)")
+
+qqnorm(defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job, for Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$CURRENT_JOB_YRS, col = 'red')
 ```
 
 Having confirmed that our data all follow our assumptions of normality (CHANGE THIS IF IT'S FALSE), we can now conduct our analysis to answer our posed questions.
@@ -442,11 +465,12 @@ As per usual, we will use $\alpha$ = 0.05.
 
 
 ```{r}
-ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income)
+ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income, alternative = 'less')
 #Output results
 ttest2sample_incomes
 ```
-Based on the Two Sample T-test of the incomes of Defaulted and Not-defaulted customers, we cannot reject the $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$ ,meaning the average incomes of defaulted v not-defaulted customers is approximatel the same. 
+Here we fail to reject the Null Hypothesis $H_0$. The average of incomes of both defaulted and non-defaulted customers is approximately the same since the p-value: `r format(ttest2sample_incomes$p.value, scientific=FALSE, digits = 3)` is greater than $\alpha$ here and we cannot adopt the alternate Hypothesis $H_1$. 
+
 
 Next, let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. We set up our home_ownership hypotheses as follows:
 $H_0$: Home Ownership Status and Loan Status are independent
@@ -470,22 +494,24 @@ $H_1$: Marital Status and Loan Status not independent
 As per usual, we will use $\alpha$ = 0.05.
 
 ```{r}
-CHI_SQUARE TEST HERE
+TEST 
 ```
 
 INSERT COMMENTARY
 
 Now we'll move back to our quantitative variables and asses if years in current home is significantly different for those who have defaulted vs not defaulted. We set up our hypotheses for years in current home as follows:
 $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$
-$H_1$: $\mu_{defaulted} = \mu_{not defaulted}$
+$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
 
 As per usual, we will use $\alpha$ = 0.05.
 
 ```{r}
-TEST HERE
+ttest2sample_currentHome = t.test(defaulted$CURRENT_HOUSE_YRS, not_defaulted$CURRENT_HOUSE_YRS, alternative = 'less')
+#Output results
+ttest2sample_currentHome
 ```
 
-INSERT COMMENTARY HERE
+As the p-value:`r format(ttest2sample_currentHome$p.value, scientific=FALSE, digits = 3)` is less than $\alpha$ (0.05), we can reject the Null Hypothesis $H_0$ and adopt the alternate hypothesis $H_1$, that the average years in their current home for defaulters and non-defaulters is significantly different. 
 
 
 Now we'll examine overall job experience and if it differs between the two loan statuses. We set up our hypotheses for overall job experience as follows:
@@ -495,10 +521,13 @@ $H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$
 As per usual, we will use $\alpha$ = 0.05.
 
 ```{r}
-TEST HERE
+ttest2sample_experience <- t.test(defaulted$Experience, not_defaulted$Experience, alternative = "two.sided")
+#Output results
+ttest2sample_experience
 ```
 
-COMMENTARY HERE
+Based on the above test, we again reject the Null Hypothesis as the `r format(ttest2sample_experience$p.value, scientific=FALSE, digits = 3)` is less than our $\alpha$ (0.05), and adopt the alternate Hypothesis $H_1$, that the difference in average experience is statistically significant.
+
 
 We know overall job experience and years in current job are highly correlated, but it is still worth examining them separately even if we it is likely we'll see the same result. Our hypotheses for years in current job are as follows:
 $H_0$: $\mu_{defaulted} = \mu_{not defaulted}$
@@ -507,10 +536,12 @@ $H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$
 As per usual, we will use $\alpha$ = 0.05.
 
 ```{r}
-TEST HERE
+ttest2sample_currentjob <- t.test(defaulted$CURRENT_JOB_YRS, not_defaulted$CURRENT_JOB_YRS)
+ttest2sample_currentjob
 ```
 
-INSERT COMMENTARY
+Our test again shows the p-value `r format(ttest2sample_currentjob$p.value, scientific=FALSE, digits = 3)` to be less than our $\alpha$ (0.05), and we can reject the Null Hypothesis, and adopt the alternate that the average years in current job is significantly different.
+
 
 Lastly, we'll examine age and if customers who default on loans are significantly younger than those who do not. We'll set up our age hypotheses as follows:
 $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$
@@ -519,10 +550,11 @@ $H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
 As per usual, we will use $\alpha$ = 0.05.
 
 ```{r}
-TEST HERE
+ttest2sample_age <- t.test(defaulted$Age, not_defaulted$Age, alternative = 'less')
+ttest2sample_age
 ```
 
-INSERT COMMENTARY
+This shows that the p-value here `r format(ttest2sample_age$p.value, scientific=FALSE, digits = 3)` is  also less than our $\alpha$ (0.05), and we can reject the Null Hypothesis, and adopt the alternate that the average age for the defaulted customer is less than the non-defaulted customers.
 	
 FINAL COMMENTARY
 
