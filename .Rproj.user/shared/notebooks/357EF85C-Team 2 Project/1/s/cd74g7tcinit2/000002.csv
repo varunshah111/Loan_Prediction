@@ -2,6 +2,20 @@
 "0","# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', "
 "0","library(ezids)"
 "0","library(dplyr)"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
 "0","# knitr::opts_chunk$set(warning = F, results = ""markup"", message = F)"
 "0","knitr::opts_chunk$set(warning = F, results = ""hide"", message = F)"
 "0","options(scientific=T, digits = 3) "

@@ -1,5 +1,0 @@
-"0","#Remove variables that won't help in our analysis"
-"0","loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))"
-"0",""
-"0","#Create summary table of remaining variables"
-"0","xkablesummary(loandata, title = ""Summary Statistics for Loan Default Prediction"")"
