@@ -200,6 +200,8 @@ Before we get to our statistical testing, let's confirm our quantitative variabl
 
 ### Checking for NA values and outliers 
 ```{r, echo=FALSE}
+
+str(loandata)
 sum(is.na(loandata$Age))
 sum(is.na(loandata$Income))
 sum(is.na(loandata$Experience))
@@ -239,7 +241,7 @@ loadPkg("gridExtra")
 
 
 ggplot(data=not_defaulted, aes(Age)) + 
-  geom_histogram(aes(y=..density..), binwidth = 10,
+  geom_histogram(aes(y=..density..), binwidth = 2,
                  col="aquamarine4", 
                  fill="aquamarine2", 
                  alpha = .7) + 
@@ -251,12 +253,12 @@ qqnorm(not_defaulted$Age, main="Q-Q plot of Age level of Not Defaulted Customers
 qqline(not_defaulted$Age, col = 'red')
 
 
-##shapiro.test(not_defaulted$Age) sample size to big to conduct a shapiro test
+##shapiro.test(not_defaulted$Age) sample size to big to conduct a shapiro test, not necessary according to proffesor
 
 
 ```
 
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows a uniform distribution
 The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
 
 
@@ -270,8 +272,7 @@ The QQplot shows distribution with thick tails, meaning that data are further aw
 #   labs(title="Not_Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
 
 ggplot(data=not_defaulted, aes(Income)) +
-  geom_histogram(aes(y=..density..),
-
+  geom_histogram(aes(y=..density..), binwidth = 7,
                  col="dodgerblue4",
                  fill="dodgerblue2",
                  alpha = .7) +
@@ -282,7 +283,7 @@ ggplot(data=not_defaulted, aes(Income)) +
 qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$Income, col = 'red')
 ```
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows a uniform distribution
 The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
 
 ### Analysis for Experience
@@ -292,7 +293,7 @@ The QQplot shows distribution with thick tails, meaning that data are further aw
 
 
 ggplot(data=not_defaulted, aes(Experience)) + 
-  geom_histogram(aes(y=..density..), binwidth = 4,
+  geom_histogram(aes(y=..density..), binwidth = 1,
                  col="gold4", 
                  fill="gold2", 
                  alpha = .7) + 
@@ -310,7 +311,7 @@ qqnorm(not_defaulted$Experience, main="Q-Q plot of Job Experience of Not Default
 qqline(not_defaulted$Experience, col = 'red')
 
 ```
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows a uniform distribution
 THE QQplot clearly shows that Experience is discrete data.
 
 ### Analysis for Current House Years
@@ -335,7 +336,7 @@ qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home 
 qqline(not_defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 ```
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows a uniform distribution
 QQplot shows that CURRENT_HOUSE_ YRS for non defaulted clearly is discrete data.
 
 
@@ -363,7 +364,7 @@ qqline(not_defaulted$CURRENT_JOB_YRS, col = 'red')
 
 
 ```
-This histogram shows a normal distribution with a  very slight negative skew 
+This histogram shows a uniform distribution with a  very slight negative skew 
 QQplot shows that CURRENT_JOB_ YRS clearly is discrete data.
 
 
@@ -373,7 +374,7 @@ QQplot shows that CURRENT_JOB_ YRS clearly is discrete data.
 ```{r}
 ggplot(data=defaulted, aes(Age)) + 
   geom_histogram(aes(y=..density..),
-                 binwidth = 10,
+                 binwidth = 1,
                  col="darkolivegreen4", 
                  fill="darkolivegreen2", 
                  alpha = .7) + 
@@ -413,7 +414,7 @@ qqnorm(defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Custome
 qqline(defaulted$Income, col = 'red')
 
 ```
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows a uniform distribution
 The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
 
 
@@ -423,7 +424,7 @@ The QQplot shows distribution with thick tails, meaning that data are further aw
 #str(loandata)
 ggplot(data=defaulted, aes(Experience)) + 
   geom_histogram(aes(y=..density..),
-                 binwidth = 5,
+                 binwidth = 1,
                  col="darkorange4", 
                  fill="darkorange2", 
                  alpha = .7) + 
@@ -441,7 +442,7 @@ qqline(defaulted$Experience, col = 'red')
 
 
 ```
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows a uniform distribution 
 QQplot shows that Experience clearly have discrete data.
 
 ### Analysis for Years in Current home
@@ -468,7 +469,7 @@ qqline(defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 
 ```
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows a uniform distribution
 QQplot shows that CURRENT_HOUSE_ YRS for defaulted clearly is discrete data.
 
 ### Analysis for Years in Current Job 
@@ -492,10 +493,10 @@ ggplot(data=defaulted, aes(CURRENT_JOB_YRS)) +
 qqnorm(defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job, for Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$CURRENT_JOB_YRS, col = 'red')
 ```
-The histogram shows a approximately bell-shaped and symmetric about the mean, so we can assume normality
+The histogram shows normal dstribution with a very slight left skew
 The QQplot clearly shows CURRENT_JOB_YRS is discrete data
 
-Having confirmed that our data all follow our assumptions of normality (CHANGE THIS IF IT'S FALSE), we can now conduct our analysis to answer our posted questions.
+Having confirmed that our data all follow our assumptions of normality (CHANGE THIS IF IT'S FALSE), we can now conduct our analysis to answer our posted questions. ## Not normal distribution but uniform distibruted 
 
 ##Qualitative Data Tests
 
@@ -503,7 +504,7 @@ First, lets deal with our qualitative data.
 
 ### Chi-squartest Test 
 
-Let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. We set up our home_ownership hypotheses as follows:
+Let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. We set up our home_ownership hypotheses as follows: ## I talked to the professor this is irrelevant, changed it. House ownership is obvioulsy dependent ... maybe change it to car?
 $H_0$: Home Ownership Status and Loan Status are independent
 $H_1$: Home Ownership Status and Loan Status are dependent
 
@@ -514,7 +515,7 @@ As per usual, we will use $\alpha$ = 0.05.
 library(lmtest)
 library(grid)
 library(vcd)
-
+str(loandata)
 mosaic(~ Risk_Flag + House_Ownership ,
   direction = c("v", "h"),
   data = loandata,
