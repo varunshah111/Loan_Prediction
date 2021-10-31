@@ -28,6 +28,7 @@ library(dplyr)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
 options(scientific=T, digits = 3) 
 # options(scipen=9, digits = 3) 
+# ‘scipen’: integer. A penalty to be applied when deciding to print numeric values in fixed or exponential notation.  Positive values bias towards fixed and negative towards scientific notation: fixed notation will be preferred unless it is more than ‘scipen’ digits wider.
 # use scipen=999 to prevent scientific notation at all times
 ```
 
@@ -45,7 +46,7 @@ loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented
 loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
 
 str(loanpredict)
-names(loanpredict)
+
 ```
 
 
@@ -57,12 +58,11 @@ loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
 
 #Create summary table of remaining variables
 xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
-str(loandata)
 
 ```
 
     
-Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loanpredict$Income)` Rupees and a maximum of `r max(loanpredict$Income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately $\$$`r round(min(loanpredict$Income)*0.013, digits=2)` and the maximum is approximately $\$$`r round(max(loanpredict$Income)*0.013, digits=2)`.
+Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loanpredict$income)` Rupees and a maximum of `r max(loanpredict$income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately $\$$`r round(min(loanpredict$income)*0.013, digits=2)` and the maximum is approximately $\$$`r round(max(loanpredict$income)*0.013, digits=2)`.
 
 
 Before we continue further, let's subset our data depending on if the individual defaulted on their loan or not.
@@ -114,16 +114,13 @@ So, let's look at the correlation of our variables before we dig in deeper and u
 library(corrplot)
 
 #Subset out numerical variables for correlation analysis
-numericalloan <- subset(loandata, select = c(Income, Age, Experience, CURRENT_JOB_YRS, CURRENT_HOUSE_YRS, Risk_Flag))
+numericalloan = subset(loandata, select = c(Income, Age, Experience, CURRENT_JOB_YRS, CURRENT_HOUSE_YRS, Risk_Flag))
 
 #Run correlation
 correlation = cor(numericalloan)
 
-xkabledply(correlation)
 #Make the plot look presentable
-corrplot(correlation, method = 'circle', type = 'upper', title = "Correlation Plot for Numerical Loan Variables")
-
-corrplot.mixed(correlation)
+corrplot(cor(numericalloan), method = 'circle', type = 'upper', title = "Correlation Plot for Numerical Loan Variables")
 ```
 Examining the correlation plot, we see that Experience and # of years in the job are highly correlated, which is expected. No other variables appear to show strong correlations with each other or with risk flags. We can examine this further as we look into the difference between the the defaulted and non-defaulted populations.
 
@@ -262,7 +259,7 @@ qqline(not_defaulted$Age, col = 'red')
 ```
 
 The histogram shows a uniform distribution
-The QQ-plot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
+The QQplot shows distribution with thick tails, meaning that data are further away on both left and right thn they would be if they are normal.
 
 
 
@@ -275,7 +272,7 @@ The QQ-plot shows distribution with thick tails, meaning that data are further a
 #   labs(title="Not_Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
 
 ggplot(data=not_defaulted, aes(Income)) +
-  geom_histogram(aes(y=..density..),
+  geom_histogram(aes(y=..density..), binwidth = 7,
                  col="dodgerblue4",
                  fill="dodgerblue2",
                  alpha = .7) +
@@ -304,13 +301,18 @@ ggplot(data=not_defaulted, aes(Experience)) +
   labs(title="Non-defaulted Experience Histogram") +
   labs(x="Experience", y="Frequency") 
 
+# ggplot(not_defaulted, aes(y=Experience)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+
 
 qqnorm(not_defaulted$Experience, main="Q-Q plot of Job Experience of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$Experience, col = 'red')
 
 ```
 The histogram shows a uniform distribution
-THE QQ-plot clearly shows that Experience is discrete data.
+THE QQplot clearly shows that Experience is discrete data.
 
 ### Analysis for Current House Years
 
@@ -324,13 +326,18 @@ ggplot(data=not_defaulted, aes(CURRENT_HOUSE_YRS)) +
   labs(title="Non-defaulted Customers years in Current Home Histogram") +
   labs(x='Years in Current Home', y="Frequency") 
 
+# ggplot(not_defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
+
 
 qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 ```
 The histogram shows a uniform distribution
-QQ-plot shows that CURRENT_HOUSE_ YRS for non defaulted clearly is discrete data.
+QQplot shows that CURRENT_HOUSE_ YRS for non defaulted clearly is discrete data.
 
 
 ### Analysis for Current Job Years
@@ -346,6 +353,11 @@ ggplot(data=not_defaulted, aes(CURRENT_JOB_YRS)) +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
   labs(x="Years in Current Job", y="Frequency") 
 
+# ggplot(not_defaulted, aes(y=CURRENT_JOB_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Years in Current Job boxplot ",x="", y = "weight (lbs)")
+# 
 
 qqnorm(not_defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job Years of Not Defaulted Customers", col = 'seagreen3') 
 qqline(not_defaulted$CURRENT_JOB_YRS, col = 'red')
@@ -353,7 +365,7 @@ qqline(not_defaulted$CURRENT_JOB_YRS, col = 'red')
 
 ```
 This histogram shows a uniform distribution with a  very slight negative skew 
-QQ-plot shows that CURRENT_JOB_ YRS clearly is discrete data.
+QQplot shows that CURRENT_JOB_ YRS clearly is discrete data.
 
 
 ## Assesment defaulted population.
@@ -362,7 +374,7 @@ QQ-plot shows that CURRENT_JOB_ YRS clearly is discrete data.
 ```{r}
 ggplot(data=defaulted, aes(Age)) + 
   geom_histogram(aes(y=..density..),
-                 binwidth = 2,
+                 binwidth = 1,
                  col="darkolivegreen4", 
                  fill="darkolivegreen2", 
                  alpha = .7) + 
@@ -384,6 +396,11 @@ The QQplot shows distribution with thick tails, meaning that data are further aw
 
 
 ```{r}
+# ggplot(defaulted, aes(y=Income)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
+
 ggplot(data=defaulted, aes(Income)) +
   geom_histogram(aes(y=..density..),
                  col="magenta4",
@@ -415,13 +432,18 @@ ggplot(data=defaulted, aes(Experience)) +
   labs(title="defaulted Experience Histogram") +
   labs(x="Experience", y="Frequency") 
 
+# ggplot(defaulted, aes(y=Experience)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Experience boxplot ",x="", y = "weight (lbs)")
+
 qqnorm(defaulted$Experience, main="Q-Q plot of Years of Job Experience of Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$Experience, col = 'red')
 
 
 ```
 The histogram shows a uniform distribution 
-QQ-plot shows that Experience clearly have discrete data.
+QQplot shows that Experience clearly have discrete data.
 
 ### Analysis for Years in Current home
 
@@ -437,13 +459,18 @@ ggplot(data=defaulted, aes(CURRENT_HOUSE_YRS)) +
   labs(title="defaulted Years in Current Home Histogram") +
   labs(x="Experience", y="Frequency") 
 
+# ggplot(defaulted, aes(y=CURRENT_HOUSE_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Years in Current Home boxplot ",x="", y = "weight (lbs)")
+
 qqnorm(defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home, for Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$CURRENT_HOUSE_YRS, col = 'red')
 
 
 ```
 The histogram shows a uniform distribution
-QQ-plot shows that CURRENT_HOUSE_ YRS for defaulted clearly is discrete data.
+QQplot shows that CURRENT_HOUSE_ YRS for defaulted clearly is discrete data.
 
 ### Analysis for Years in Current Job 
 
@@ -457,6 +484,11 @@ ggplot(data=defaulted, aes(CURRENT_JOB_YRS)) +
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
   labs(title="defaulted - Years in Current Job Histogram") +
   labs(x="Experience", y="Frequency") 
+
+# ggplot(defaulted, aes(y=CURRENT_JOB_YRS)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Defaulted Customer Years in Current Job boxplot ",x="", y = "weight (lbs)")
 
 qqnorm(defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job, for Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$CURRENT_JOB_YRS, col = 'red')
@@ -619,15 +651,6 @@ This shows that the p-value here `r format(ttest2sample_age$p.value, scientific=
 	
 FINAL COMMENTARY
 
-	• Do customers who default on loans have statistically lower incomes than those who don't default?
-	• Does home-ownership correlate with lower rates of default?
-	• Does being married decrease the likelihood of default?
-	• Does an additional year of home-ownership reduce the likelihood of default?
-	• Does job experience or age show a larger impact on someone defaulting on their loan?
-		○ Within that, do job experience and age both negatively correlate with loan defaults?
-	• Are customers who default on loans younger than those who do not?
-	
-	
 
 CODE THAT MIGHT HELP:
 INLINE:
