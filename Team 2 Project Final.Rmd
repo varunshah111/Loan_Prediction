@@ -53,16 +53,13 @@ names(loanpredict)
 
 Our dataset has a total of `r nrow(loanpredict)` data points and `r ncol(loanpredict)-1` variables that we can use to assess the likelihood of someone defaulting on their loan. That being said, we may want to shrink our dataset down to only the ones that an provide some value in our analysis. Therefore, we'll remove the indexing column "ID" as well as the columns "Profession", "City", and "State" because they have too many distinct values for us to get true value from in our analysis. We will then run a summary analysis to get a better idea of our remaining variables
 
-```{r EDA_basicstats, result = TRUE}
-#Remove variables that won't help in our analysis
-loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
 
-#Create summary table of remaining variables
+
+```{r, results='markup'}
+loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
 xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
 str(loandata)
-
 ```
-
     
 Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loanpredict$Income)` Rupees and a maximum of `r max(loanpredict$Income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately  `r round(min(loanpredict$Income)*0.013, digits=2)` USD and the maximum is approximately `r round(max(loanpredict$Income)*0.013, digits=2)` USD.
 
@@ -78,7 +75,7 @@ not_defaulted <- subset(loandata, Risk_Flag == 0)
 ```
 
 Let's first examine the population of customers who have not defaulted on their loans.
-```{r}
+```{r, results='markup'}
 #Summary for non-defaulted customers
 xkablesummary(not_defaulted, title = "Summary of Data for Non-Defaulted Customers")
 ```
@@ -443,7 +440,7 @@ ggplot(data=defaulted, aes(CURRENT_HOUSE_YRS)) +
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
   labs(title="Defaulted Years in Current Home Histogram") +
-  labs(x="Experience", y="Frequency") 
+  labs(x="Current Home", y="Frequency") 
 
 qqnorm(defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home, for Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$CURRENT_HOUSE_YRS, col = 'red')
@@ -555,7 +552,7 @@ mosaic(~ Risk_Flag + Married.Single ,
 ```
 
 
-When we examine the Chi-squared test shows of Risk Flag vs Marital the pvalue = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
+When we examine the Chi-squared test shows of Risk Flag vs Marital the pvalue = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H_1$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
 
 
 ## Quantitative Variables
