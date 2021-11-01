@@ -1,2 +1,0 @@
-"0","# ggplot(df.with.predfin.from.model, aes(resid))+geom_freqpoly(binwidth=.05)"
-"0","ggplot(df.with.predfin.from.model,aes(final,resid))+geom_point(aes(final,resid))"

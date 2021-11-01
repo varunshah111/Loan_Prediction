@@ -1,8 +1,0 @@
-"0","loadPkg(""corrplot"")"
-"2","corrplot 0.90 loaded
-"
-"0","#str(bike16)"
-"0","drop2 <- c('Hour')"
-"0","df2 = bike16[,!(names(bike16)%in% drop2)]"
-"0","bike16cor = cor(df2)"
-"0","xkabledply(bike16cor)"

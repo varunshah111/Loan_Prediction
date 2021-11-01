@@ -1,3 +1,0 @@
-"0",""
-"0","reg2.best <- regsubsets(Salary~. , data = hittersC, nvmax = 9, nbest = 1, method = ""exhaustive"") "
-"0","plot(reg2.best, scale = ""adjr2"", main = ""Adjusted R^2"")"

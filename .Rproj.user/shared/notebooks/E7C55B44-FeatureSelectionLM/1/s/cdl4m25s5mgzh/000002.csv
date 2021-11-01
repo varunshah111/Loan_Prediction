@@ -1,2 +1,0 @@
-"0","reg.seqrep <- regsubsets(Salary~., data = hittersC, nvmax = 10, nbest = 2 , method = ""seqrep"")"
-"0","plot(reg.seqrep, scale = ""adjr2"", main = ""Adjusted R^2"")"

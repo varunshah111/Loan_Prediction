@@ -1,4 +1,0 @@
-"0","#Data grid is a function inside the grid package that is a useful tool for creating graphics"
-"0","loadPkg(""modelr"")"
-"0","df.with.predfin.from.model <- add_predictions(stat500,model.final)"
-"0","head(df.with.predfin.from.model)"

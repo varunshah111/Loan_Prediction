@@ -1,7 +1,0 @@
-"0","bike16 = subset(bike, bike$Hour == 16)"
-"0","nrow(bike16)"
-"1","[1]"
-"1"," 730"
-"1","
-"
-"0","bike16$Hour = NULL # Hour has only one value '16' now. No need to keep this column."

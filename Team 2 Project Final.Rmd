@@ -64,7 +64,7 @@ str(loandata)
 ```
 
     
-Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loanpredict$Income)` Rupees and a maximum of `r max(loanpredict$Income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately $\$$`r round(min(loanpredict$Income)*0.013, digits=2)` and the maximum is approximately $\$$`r round(max(loanpredict$Income)*0.013, digits=2)`.
+Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loanpredict$Income)` Rupees and a maximum of `r max(loanpredict$Income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately  `r round(min(loanpredict$Income)*0.013, digits=2)` USD and the maximum is approximately `r round(max(loanpredict$Income)*0.013, digits=2)` USD.
 
 
 Before we continue further, let's subset our data depending on if the individual defaulted on their loan or not.
@@ -90,7 +90,7 @@ Looking at the summary data for non-defaulted customers, we can see that the maj
 xkablesummary(defaulted, title = "Summary of Data for Defaulted Customers")
 ```
 
-For the defaulted customers, we can see that they, like the non-defaulted population, primarily rent, own a car, and are not married. They have an average income of `r mean(defaulted$Income)` Rupees. These customers also have an average of `r mean(defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(defaulted$CURRENT_HOUSE_YRS)` years. Their average age is `r mean(defaulted$Age)` years old and they have, on average `r mean(defaulted$Experience)` years of experience working.
+For the defaulted customers, we can see that they, like the non-defaulted population, primarily rent, own a car, and are not married. They have an average income of RESOLVE!`r mean(defaulted$Income)` Rupees. These customers also have an average of `r mean(defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(defaulted$CURRENT_HOUSE_YRS)` years. Their average age is `r mean(defaulted$Age)` years old and they have, on average `r mean(defaulted$Experience)` years of experience working.
 
 Based on what we're seeing here, we would like to use this dataset to help us answer a few key questions related to defaulting on loans:
 
@@ -206,7 +206,7 @@ Although the difference appears subtle, we can see that the boxplot for Defaulte
 Although we didn't see any indication of outliers or NA values in our boxplots and preliminary data checks, it's still worthwhile to confirm that before we proceed with our analysis.
 
 ### Checking for NA values and outliers 
-```{r, echo=FALSE}
+```{r, results='hide'}
 
 str(loandata)
 sum(is.na(loandata$Age))
@@ -231,7 +231,7 @@ outlierKD2(not_defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=TRUE, histogram=TRUE,
 
 ```
 
-Before we get to our statistical testing, let's confirm our quantitative variables all follow the required normality assumptions. To do that, we'll go ahead and examine a histogram and Q-Q Plot for each variables, make a visual assessment of normality, and then utilize a Shapiro-Wilk test to confirm our assumptions. We will conduct this assessment separately for Defaulted and Non-Defaulted customers to ensure that each population follows the normal distribution.
+Before we get to our statistical testing, let's confirm our quantitative variables all follow the required normality assumptions. To do that, we'll go ahead and examine a histogram and Q-Q Plot for each variables, make a visual assessment of normality to confirm our assumptions. We will conduct this assessment separately for Defaulted and Non-Defaulted customers to ensure that each population follows the normal distribution.
 
 ## Assesment non-defaulted population.
 We'll go ahead and start with our population that did not default on their loans before moving onto the population that did default.
@@ -306,7 +306,7 @@ ggplot(data=not_defaulted, aes(Experience)) +
                  fill="gold2", 
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Experience), sd = sd(not_defaulted$Experience))) + 
-  labs(title="Non-defaulted Experience Histogram") +
+  labs(title="Non-defaulted Job Experience Histogram") +
   labs(x="Experience", y="Frequency") 
 
 
@@ -474,15 +474,22 @@ Again, we see that years in current job appears to follow a relatively exponenti
 
 Now that we've confirmed the distributions of our two samples are within the same distribution families, we can go ahead and begin our statistical analyses to try and answer our posed questions.
 
-##Qualitative Data Tests
+### Qualitative Data Tests
 
 First, lets deal with our qualitative data.
 
 ### Chi-Square Test 
 
-Let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. Although a dependency may seem apparent, because our loans are not explicitly home loans, but rather consumer loans, which include car loans, home loans, wedding loans, student loans, etc. we will still analyze the dependency or independency of home-ownership and laon defaults. We set up our home_ownership hypotheses as follows:
-$H_0$: Home Ownership Status and Loan Status are independent
-$H_1$: Home Ownership Status and Loan Status are dependent
+Let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. Although a dependency may seem apparent, because our loans are not explicitly home loans, but rather consumer loans, which include car loans, home loans, wedding loans, student loans, etc. we will still analyze the dependency or independency of home-ownership and laon defaults. We set up our home_ownership hypotheses as follows:  
+
+
+
+$H_0$: Home Ownership Status and Loan Status are independent  
+
+$H_1$: Home Ownership Status and Loan Status are dependent  
+
+
+
 
 As per usual, we will use $\alpha$ = 0.05.
 
@@ -498,7 +505,7 @@ chitest_housing
 ```
 
 
-```{r, eval=F}
+```{r}
 library(lmtest)
 library(grid)
 library(vcd)
@@ -512,12 +519,19 @@ mosaic(~ Risk_Flag + House_Ownership ,
 
 ```
 
-This Chi-squared test shows that `chitest_housing$p.value` = `r chitest_housing$p.value` which means is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we reject our $H_0$ and accept $H1_0$ Home Ownership Status and Loan Status are dependent. Knowing the value of one variables helps to predict the value of the other variable.
+This Chi-squared test shows that pvalue = `r chitest_housing$p.value` which means is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H_1$. After this test we reject our $H_0$ and accept $H_1$ Home Ownership Status and Loan Status are dependent. Knowing the value of one variables helps to predict the value of the other variable.
 
 
-Next, we'll assess if marital status has an impact on default status. We set up our marital status hypotheses as follows:
-$H_0$: Marital Status and Loan Status are independent
-$H_1$: Marital Status and Loan Status not independent
+Next, we'll assess if marital status has an impact on default status. We set up our marital status hypotheses as follows:  
+
+
+
+$H_0$: Marital Status and Loan Status are independent  
+
+$H_1$: Marital Status and Loan Status are dependent  
+
+
+
 
 As per usual, we will use $\alpha$ = 0.05.
 
@@ -529,7 +543,7 @@ chitest_marital = chisq.test(contable_marital)
 chitest_marital
 ```
 
-```{r, eval=F}
+```{r}
 
 #Produces graphical representation of chi-square
 mosaic(~ Risk_Flag + Married.Single ,
@@ -541,18 +555,22 @@ mosaic(~ Risk_Flag + Married.Single ,
 ```
 
 
-When we examine the Chi-squared test shows of Risk Flag vs Marital the `chitest_marital$p.value` = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
+When we examine the Chi-squared test shows of Risk Flag vs Marital the pvalue = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
 
 
-###Quantitative Variables
+## Quantitative Variables
 
 ## T-test
 
 Now we'll move back to our quantitative variables.
 
-First, let's analyze the income levels and if they differ significantly for defaulted vs. non-defaulted customers. Given that we are trying to assess if customers who have defaulted have lower incomes than those who haven't, we would set up our hypothesis test as follows:
-$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$
-$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
+First, let's analyze the income levels and if they differ significantly for defaulted vs. non-defaulted customers. Given that we are trying to assess if customers who have defaulted have lower incomes than those who haven't, we would set up our hypothesis test as follows:  
+
+$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$  
+
+
 
 As per usual, we will use $\alpha$ = 0.05.
 
@@ -567,9 +585,13 @@ Here we fail to reject the Null Hypothesis $H_0$. We do not have enough evidence
 
 
 
-Now lets asses if years in current home is significantly different for those who have defaulted vs not defaulted. We set up our hypotheses for years in current home as follows:
-$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$
-$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
+Now lets asses if years in current home is significantly different for those who have defaulted vs not defaulted. We set up our hypotheses for years in current home as follows:  
+
+$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$  
+
+
 
 As per usual, we will use $\alpha$ = 0.05.
 
@@ -581,9 +603,12 @@ ttest2sample_currentHome
 
 With a p-value of `r format(ttest2sample_currentHome$p.value, scientific=FALSE, digits = 3)`, which is less than $\alpha$, we can reject the Null Hypothesis $H_0$ in favor of the alternative hypothesis $H_1$. Therefore, at the $\alpha$ = 0.05 level, we can say that the average number of years in the current house for someone who has defaulted is significantly less than for someone who did not default.
 
-Now we'll examine overall job experience and if it differs between the two loan statuses. We set up our hypotheses for overall job experience as follows:
-$H_0$: $\mu_{defaulted} = \mu_{not defaulted}$
-$H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$
+Now we'll examine overall job experience and if it differs between the two loan statuses. We set up our hypotheses for overall job experience as follows:  
+
+$H_0$: $\mu_{defaulted} = \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$  
+
 
 As per usual, we will use $\alpha$ = 0.05.
 
@@ -593,12 +618,15 @@ ttest2sample_experience <- t.test(defaulted$Experience, not_defaulted$Experience
 ttest2sample_experience
 ```
 
-Based on our t-test, we again reject the null hypothesis with a p-value of `r format(ttest2sample_experience$p.value, scientific=FALSE, digits = 3)` in favor of the alternative hypothesis $H_1$. Therefore, we can say that at an $\alpha$ = 0.05 level, the years of experience for someone who has defaulted differs significantly from the years of experience for someone who has not-defaulted.
+Based on our t-test, we again reject the null hypothesis with a p-value of `r format(ttest2sample_experience$p.value, scientific=TRUE, digits = 3)` in favor of the alternative hypothesis $H_1$. Therefore, we can say that at an $\alpha$ = 0.05 level, the years of experience for someone who has defaulted differs significantly from the years of experience for someone who has not-defaulted.
 
 
-We know overall job experience and years in current job are highly correlated, but it is still worth examining them separately even if we it is likely we'll see the same result. Our hypotheses for years in current job are as follows:
-$H_0$: $\mu_{defaulted} = \mu_{not defaulted}$
-$H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$
+We know overall job experience and years in current job are highly correlated, but it is still worth examining them separately even if we it is likely we'll see the same result. Our hypotheses for years in current job are as follows:  
+
+$H_0$: $\mu_{defaulted} = \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$  
+
 
 As per usual, we will use $\alpha$ = 0.05.
 
@@ -607,12 +635,16 @@ ttest2sample_currentjob <- t.test(defaulted$CURRENT_JOB_YRS, not_defaulted$CURRE
 ttest2sample_currentjob
 ```
 
-Our test again shows our p-value of `r format(ttest2sample_currentjob$p.value, scientific=FALSE, digits = 3)` is less than our $\alpha$, so we can reject the null hypothesis in favor of the alternative hypothesis. Therefore, at the $\alpha$ = 0.05 level, we can say that years in current job differs significantly between those who have defaulted and those who haven't.
+Our test again shows our p-value of `r format(ttest2sample_currentjob$p.value, scientific=TRUE, digits = 3)` is less than our $\alpha$, so we can reject the null hypothesis in favor of the alternative hypothesis. Therefore, at the $\alpha$ = 0.05 level, we can say that years in current job differs significantly between those who have defaulted and those who haven't.
 
 
-Lastly, we'll examine age and if customers who default on loans are significantly younger than those who do not. We'll set up our age hypotheses as follows:
-$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$
-$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
+Lastly, we'll examine age and if customers who default on loans are significantly younger than those who do not. We'll set up our age hypotheses as follows:  
+
+
+$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$  
+
 
 As per usual, we will use $\alpha$ = 0.05.
 
@@ -621,7 +653,7 @@ ttest2sample_age <- t.test(defaulted$Age, not_defaulted$Age, alternative = 'less
 ttest2sample_age
 ```
 
-With our p-value of `r format(ttest2sample_age$p.value, scientific=FALSE, digits = 3)`, which is less than our $\alpha$=0.05,  we can reject the null hypothesis in favor of the alternative. Therefore, the average age of those who have defaulted is statistically significantly lower than the average age of those who have not defaulted.
+With our p-value of `r format(ttest2sample_age$p.value, scientific=TRUE, digits = 3)`, which is less than our $\alpha$=0.05,  we can reject the null hypothesis in favor of the alternative. Therefore, the average age of those who have defaulted is statistically significantly lower than the average age of those who have not defaulted.
 
 
 Now that we've completed our analyses, we can return to our initial questions to see what we've discovered. First, we discovered that we don't have enough evidence to state that customers who defaulted have lower incomes than those who don't. Second, we learned that rates of default is dependent with home-ownership status. Then we confirmed that marital status is also dependent with laon default status. Although we can't confirm if an additional year of home-ownership reduces the likelihood of default, we can say that years of home-ownership differs significantly between those who have defaulted and those who haven't. We also saw a similar result with overall job experience and years of experience in the current job. Finally, we saw that customers who have defaulted are in fact statistically significantly younger than those who have not.

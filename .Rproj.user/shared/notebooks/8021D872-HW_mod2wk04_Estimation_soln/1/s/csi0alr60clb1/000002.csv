@@ -1,1 +1,0 @@
-"0","boxplot(gre~rank,data=admitted,main=""GRE Distribution vs School Rankings - Admitted"", xlab=""School Rankings"", ylab=""GRE"", col=c(""#ff0000"",""#11cc11"",""#0000ff"",""#ff00ff""))"

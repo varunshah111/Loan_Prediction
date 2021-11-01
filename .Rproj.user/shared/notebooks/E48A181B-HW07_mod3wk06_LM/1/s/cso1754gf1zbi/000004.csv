@@ -1,6 +1,0 @@
-"0",""
-"0",""
-"0","#fit3 <- lm(mpg ~ wt+disp+cyl, data = mtcars)"
-"0","#xkabledply(fit3, title = paste(""Model :"", format(formula(fit3)) ) )"
-"0","#xkablevif(fit3)"
-"0",""

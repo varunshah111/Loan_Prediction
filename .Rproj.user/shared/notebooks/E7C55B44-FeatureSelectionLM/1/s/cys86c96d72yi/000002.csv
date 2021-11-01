@@ -1,2 +1,0 @@
-"0","reg.forward10 <- regsubsets(Salary~., data = hittersC, nvmax = 10, nbest = 1, method = ""forward"")"
-"0","plot(reg.forward10, scale = ""adjr2"", main = ""Adjusted R^2"")"

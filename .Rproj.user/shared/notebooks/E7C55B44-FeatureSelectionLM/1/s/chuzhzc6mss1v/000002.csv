@@ -1,2 +1,0 @@
-"0","hittersC = Hitters[,c('AtBat','Hits','HmRun','Runs','RBI','Walks','Years','League','Division','PutOuts','Assists','Errors','Salary')] # cleaned dataset"
-"0","unloadPkg(""ISLR"")"

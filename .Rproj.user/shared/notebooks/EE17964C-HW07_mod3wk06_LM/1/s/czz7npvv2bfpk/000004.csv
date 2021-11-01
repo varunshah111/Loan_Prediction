@@ -1,3 +1,0 @@
-"0",""
-"0","#corrplot(bike16cor, method = 'number')"
-"0","corrplot(bike16cor, method = 'ellipse', type = 'upper', title = 'Correlation  Map')"

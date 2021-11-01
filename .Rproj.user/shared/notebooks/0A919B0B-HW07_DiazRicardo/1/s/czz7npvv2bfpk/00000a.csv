@@ -1,5 +1,0 @@
-"0",""
-"0","#corrplot(bike16cor, method = 'number')"
-"0","#mtcarscor = cor(mtcars) # get the correlation matrix between all numerical variables."
-"0","#mtcarscor"
-"0",""

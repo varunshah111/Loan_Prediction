@@ -1,3 +1,0 @@
-"0","# "
-"0","# Mallow Cp"
-"0","subsets(reg2.best, statistic=""cp"", legend = FALSE, min.size = 5, main = ""Mallow Cp"")"

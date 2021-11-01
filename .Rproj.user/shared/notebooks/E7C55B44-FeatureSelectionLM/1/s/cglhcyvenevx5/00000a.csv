@@ -1,5 +1,0 @@
-"0","loadPkg(""leaps"")"
-"0","#This is essentially best fit "
-"0","reg.best10 <- regsubsets(Salary~. , data = hittersC, nvmax = 10, nbest = 1, method = ""exhaustive"")  # leaps::regsubsets() - Model selection by exhaustive (default) search, forward or backward stepwise, or sequential replacement"
-"0","#The plot will show the Adjust R^2 when using the variables across the bottom"
-"0","plot(reg.best10, scale = ""adjr2"", main = ""Adjusted R^2"")"

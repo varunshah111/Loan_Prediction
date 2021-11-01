@@ -1,4 +1,0 @@
-"0","loadPkg(""ggplot2"")"
-"0","ggplot(admitted, aes(x=rank, y=gre, fill=rank)) + "
-"0","  geom_boxplot( colour=c(""#ff0000"",""#11cc11"",""#0000ff"",""#ff00ff""), outlier.shape=8, outlier.size=4) +"
-"0","  labs(title=""GRE Distribution vs School Rankings - Admitted"", x=""School Rankings"", y = ""GRE"")"
