@@ -53,7 +53,7 @@ names(loanpredict)
 
 Our dataset has a total of `r nrow(loanpredict)` data points and `r ncol(loanpredict)-1` variables that we can use to assess the likelihood of someone defaulting on their loan. That being said, we may want to shrink our dataset down to only the ones that an provide some value in our analysis. Therefore, we'll remove the indexing column "ID" as well as the columns "Profession", "City", and "State" because they have too many distinct values for us to get true value from in our analysis. We will then run a summary analysis to get a better idea of our remaining variables
 
-```{r EDA_basicstats, result = TRUE}
+```{r EDA_basicstats, results='show'}
 #Remove variables that won't help in our analysis
 loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
 
@@ -78,14 +78,14 @@ not_defaulted <- subset(loandata, Risk_Flag == 0)
 ```
 
 Let's first examine the population of customers who have not defaulted on their loans.
-```{r}
+```{r ,results='show'}
 #Summary for non-defaulted customers
 xkablesummary(not_defaulted, title = "Summary of Data for Non-Defaulted Customers")
 ```
 
 Looking at the summary data for non-defaulted customers, we can see that the majority of these customers rent their home, own a car, and are not married. Their average age is `r mean(not_defaulted$Age)` years old and they have, on average `r mean(not_defaulted$Experience)` years of experience working. Further, these customers have an average income of `r mean(not_defaulted$Income)` Rupees. These customers also have an average of `r mean(not_defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(not_defaulted$CURRENT_HOUSE_YRS)` years.
 
-```{r}
+```{r, results='show'}
 #Summary for defaulted customers
 xkablesummary(defaulted, title = "Summary of Data for Defaulted Customers")
 ```
@@ -123,7 +123,9 @@ correlation = cor(numericalloan)
 
 xkabledply(correlation)
 #Make the plot look presentable
-corrplot(correlation, method = 'circle', type = 'upper', title = "Correlation Plot for Numerical Loan Variables")
+corrplot(correlation, method = 'circle', type = 'upper', 
+         title = "Correlation Plot for Numerical Loan Variables",
+         mar=c(0,0,2,0))
 
 corrplot.mixed(correlation)
 ```
@@ -147,14 +149,14 @@ ggplot(loandata, aes(x=Risk_Flag, y=Income)) +
 Examing these boxplots, we don't see any inherent difference in the income levels for those who have and haven't defaulted on their loans. We will still conduct a statistical test later to confirm that income doesn't differ significantly, but for now we will simply say that it doesn't appear to differ between our populations.
 
 Let's now examine home-ownership rates relative to default status.
-```{r}
+```{r, results='show'}
 cont_table_housing <- table(loandata$House_Ownership, loandata$Risk_Flag)
 xkabledply(cont_table_housing, title="Contingency table for Home-Ownership vs. Loan Default Status")
 ```
 Looking at our contingency table, we can see that Renting is clearly the most common form of housing for both populations, followed by owning a home, and lastly by neither owning nor renting their home. It's a bit tricky to assess proportions from this, but we will later be conducting a chi-square test to determine if the proportions differ between the two populations.
 
 Next, let's examine marital status vs. loan default status.
-```{r}
+```{r, results='show'}
 cont_table_marriage <- table(loandata$Married.Single, loandata$Risk_Flag)
 xkabledply(cont_table_marriage, title="Contingency table for Marriage Status vs. Loan Default Status")
 ```
@@ -443,7 +445,7 @@ ggplot(data=defaulted, aes(CURRENT_HOUSE_YRS)) +
                  alpha = .7) + 
   stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
   labs(title="Defaulted Years in Current Home Histogram") +
-  labs(x="Experience", y="Frequency") 
+  labs(x="Years in Current Home", y="Frequency") 
 
 qqnorm(defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home, for Defaulted Customers", col = 'royalblue2') 
 qqline(defaulted$CURRENT_HOUSE_YRS, col = 'red')
@@ -493,7 +495,7 @@ $H_1$: Home Ownership Status and Loan Status are dependent
 
 As per usual, we will use $\alpha$ = 0.05.
 
-```{r}
+```{r, results='show'}
 
 #contigeny table
 contable_housing = table(loandata$House_Ownership, loandata$Risk_Flag)
@@ -535,7 +537,7 @@ $H_1$: Marital Status and Loan Status are dependent
 
 As per usual, we will use $\alpha$ = 0.05.
 
-```{r}
+```{r, results='show'}
 
 contable_marital = table(loandata$Married.Single, loandata$Risk_Flag)
 xkabledply(contable_marital, title = 'Contigency table for Risk Flag vs Marital Status ')
@@ -575,7 +577,7 @@ $H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
 As per usual, we will use $\alpha$ = 0.05.
 
 
-```{r}
+```{r, results='show'}
 ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income, alternative = 'less')
 #Output results
 ttest2sample_incomes
@@ -595,7 +597,7 @@ $H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
 
 As per usual, we will use $\alpha$ = 0.05.
 
-```{r}
+```{r, results='show'}
 ttest2sample_currentHome = t.test(defaulted$CURRENT_HOUSE_YRS, not_defaulted$CURRENT_HOUSE_YRS, alternative = 'less')
 #Output results
 ttest2sample_currentHome
@@ -630,7 +632,7 @@ $H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$
 
 As per usual, we will use $\alpha$ = 0.05.
 
-```{r}
+```{r, results='show'}
 ttest2sample_currentjob <- t.test(defaulted$CURRENT_JOB_YRS, not_defaulted$CURRENT_JOB_YRS)
 ttest2sample_currentjob
 ```
@@ -648,7 +650,7 @@ $H_1$: $\mu_{defaulted} < \mu_{not defaulted}$
 
 As per usual, we will use $\alpha$ = 0.05.
 
-```{r}
+```{r, results='show'}
 ttest2sample_age <- t.test(defaulted$Age, not_defaulted$Age, alternative = 'less')
 ttest2sample_age
 ```
