@@ -5,6 +5,7 @@ Team 2 Project Proposal
 Cooper Atkins, Ricardo Diaz, Varun Shah
 
 Our team will be studying loans in India and their default rates based on customer characteristics. Our primary research questions are as follows:
+
 •	Do customers who default on loans have statistically lower incomes than those who don't default?
 •	Does homeownership correlate with lower rates of default?
 •	Does being married decrease the likelihood of default?
