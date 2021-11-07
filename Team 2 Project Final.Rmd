@@ -90,7 +90,7 @@ Looking at the summary data for non-defaulted customers, we can see that the maj
 xkablesummary(defaulted, title = "Summary of Data for Defaulted Customers")
 ```
 
-For the defaulted customers, we can see that they, like the non-defaulted population, primarily rent, own a car, and are not married. They have an average income of RESOLVE!`r mean(defaulted$Income)` Rupees. These customers also have an average of `r mean(defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(defaulted$CURRENT_HOUSE_YRS)` years. Their average age is `r mean(defaulted$Age)` years old and they have, on average `r mean(defaulted$Experience)` years of experience working.
+For the defaulted customers, we can see that they, like the non-defaulted population, primarily rent, own a car, and are not married. They have an average income of RESOLVE! `r mean(defaulted$Income)` Rupees. These customers also have an average of `r mean(defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(defaulted$CURRENT_HOUSE_YRS)` years. Their average age is `r mean(defaulted$Age)` years old and they have, on average `r mean(defaulted$Experience)` years of experience working.
 
 Based on what we're seeing here, we would like to use this dataset to help us answer a few key questions related to defaulting on loans:
 
@@ -557,7 +557,7 @@ mosaic(~ Risk_Flag + Married.Single ,
 ```
 
 
-When we examine the Chi-squared test shows of Risk Flag vs Marital the pvalue = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
+When we examine the Chi-squared test shows of Risk Flag vs Marital the pvalue = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Marital Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
 
 
 ## Quantitative Variables
