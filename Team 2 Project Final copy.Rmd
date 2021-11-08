@@ -1,7 +1,6 @@
 ---
-title: "Mini Project Team 2"
-authors: "By: Cooper, Ricardo, Varun, and Alton"
-#date: "today"
+title: "Mini Project Team 2"  
+authors: "By: Cooper Atkins, Ricardo Diaz, Varun Shah, and Alton Kessely"  
 date: "`r Sys.Date()`"
 output:
   html_document:
@@ -86,16 +85,16 @@ sum(is.na(loandata$Income))
   
 ## Project: Consumer Loans in India
 
-### Executive Summary:
+### Executive Summary
 
 We are analyzing consumer loan data in India, sourced from Kaggle. We are analyzing the relationship between several variables and loan default status including income, home ownership, job experience, etc. With the exception of income, all variables tested were significant.
 
-### Information Gathered:
+### Information Gathered
 
 All the information was collected at the time of the loan application, according to the Kaggle description. The author of the dataset doesn’t give more specifications about the dataset. The only context he provides is that the dataset belongs to the institution Univ Ai; it was used in their hackathon. The uniform distribution of the data and the limited features of the dataset provided can lead us to believe that the dataset may have been artificially created. We tried to contact the owner of the dataset, but no answer was given.
 
 
-### Dataset:
+### Dataset
 
 There is existing research on loan defaults and what variables tend to correlate with it in the United States. For our purposes, we wanted to understand if we would see similar dependencies in India for their consumer loan portfolios. In the US, income correlates highly with default status, where we utilize transformations such as debt-to-income ratios and won’t lend to individuals who don’t have the financial means to pay it back. Another common feature is that a way to determine creditworthiness (essentially a measure of the likelihood someone will pay back a loan) is if someone has trusted you with credit before (and not defaulted on it). In our dataset, we had two proxies for this: owning a home and owning a car, as both typically require consumer loans. Other variables that we know have impacts are employment status (not the job itself, but the existence of the job), age (maturity and income tend to go with age, which will impact responsibility and ability in paying back a loan), and job experience (again, a potential proxy for income). The years of homeownership can be considered a proxy for credit history, as if a loan is required for a home, we know the customer must have a credit history of at least that long, which in the US helps determine how much information on a customer exists. Knowing more information helps banks make more informed decisions, so they’re likelier to loan to customers with extensive history showing ability to pay off loans. This information also goes into the FICO score in the US, but it’s unclear if there’s an equivalent in India for the FICO score. There are two variables in the dataset that we know correlate with default status, but which are illegal in the United States to use in decisioning: age and marital status, as using them is considered discriminatory.  
 
@@ -115,7 +114,7 @@ We would like to use this dataset to help us answer a few key questions related 
 In order to answer these questions, we need to analyze incomes, home-ownership status, marriage status, years in current house, job experience/experience, and age.  
 
 
-### Limitations:
+### Limitations
 
 There is a variety of additional information that would have been beneficial to our model. Banks ask for a lot of information to give you a loan, and depending on the loan, they may solicit more information. It would have been ideal if our team had the loan amount and loan term. It’s important to know the longevity of the loan; potentially, some customers will default on long-term loans but will not default on short-term loans. Concerning the loan amount, it will have also been helpful to have it in our features to understand the scale of a default and if we want to avoid some more than others. Having more customer characteristics and loan characteristics would help improve our model's accuracy. The goal of the bank is to provide loans to the most qualifying customers. When a bank gives out a loan to a client, it ensures that the customer will be able to pay and reduce the chances of customers receiving a larger loan than they can handle. There are responsibilities in both parts since the bank has the resources to build better models.   
 
@@ -130,7 +129,7 @@ Further limitations include omitted variables or data points we would want to ha
 These limitations primarily prevent this analysis from applying to broad ranges of the population, but will still give us a limited understanding for employed Indian customers have lived in their homes for between 10 and 14. Additionally we don’t fully understand the Indian consumer loan market, so we don’t understand all of the possibly types of loans, how they assess loan decisions, or any nuances in who can or can’t receive loans at all. While it’s interesting for us to compare variables that influence the US and Indian loan default statuses, we recognize that the two countries and their financial systems are very different, and therefore the comparisons aren’t like for like, and there may be limited applicability back to the US markets.  
 
 
-### Analyses:
+### Analyses
 
 
 ```{r EDA_basicstats, results='show'}
@@ -179,6 +178,8 @@ Examining the correlation plot, we see that Experience and # of years in the job
 
 #### Chi-Square Test 
 
+##### Home Ownership and Loan Status
+
 Let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. Although a dependency may seem apparent, because our loans are not explicitly home loans, but rather consumer loans, which include car loans, home loans, wedding loans, student loans, etc. we will still analyze the dependency or independency of home-ownership and laon defaults. We set up our home_ownership hypotheses as follows:  
 
 
@@ -224,6 +225,8 @@ mosaic(~ Risk_Flag + House_Ownership ,
 
 This Chi-squared test shows that pvalue = `r chitest_housing$p.value` which means is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H_1$. After this test we reject our $H_0$ and accept $H_1$ Home Ownership Status and Loan Status are dependent. Knowing the value of one variables helps to predict the value of the other variable.
   
+
+##### Marital Status and Default Status
   
 Next, we'll assess if marital status has an impact on default status. We set up our marital status hypotheses as follows:  
 
@@ -273,6 +276,8 @@ When we examine the Chi-squared test shows of Risk Flag vs Marital the p-value =
 
 Now we'll move back to our quantitative variables.
 
+##### Income Levels for Defaulted vs Non-defaulted
+
 First, let's analyze the income levels and if they differ significantly for defaulted vs. non-defaulted customers. Given that we are trying to assess if customers who have defaulted have lower incomes than those who haven't, we would set up our hypothesis test as follows:  
 
 $H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$  
@@ -292,6 +297,7 @@ ttest2sample_incomes
 Here we fail to reject the Null Hypothesis $H_0$. We do not have enough evidence that the average income of defaulted vs. non-defaulted customers is different. We fail to reject th enull hypothesis with a p-value of `r format(ttest2sample_incomes$p.value, scientific=FALSE, digits = 3)`, which is greater than $\alpha$.  
 
 
+##### Years in Current Home for Defaulted vs Non-defaulted
 
 Now lets asses if years in current home is significantly different for those who have defaulted vs not defaulted. We set up our hypotheses for years in current home as follows:  
 
@@ -314,6 +320,8 @@ ttest2sample_currentHome
   
 With a p-value of `r format(ttest2sample_currentHome$p.value, scientific=FALSE, digits = 3)`, which is less than $\alpha$, we can reject the Null Hypothesis $H_0$ in favor of the alternative hypothesis $H_1$. Therefore, at the $\alpha$ = 0.05 level, we can say that the average number of years in the current house for someone who has defaulted is significantly less than for someone who did not default.
 
+##### Job Experience for Defaulted vs Non-defaulted
+
 Now we'll examine overall job experience and if it differs between the two loan statuses. We set up our hypotheses for overall job experience as follows:  
 
 $H_0$: $\mu_{defaulted} = \mu_{not defaulted}$  
@@ -332,6 +340,7 @@ ttest2sample_experience
 
 Based on our t-test, we again reject the null hypothesis with a p-value of `r format(ttest2sample_experience$p.value, scientific=TRUE, digits = 3)` in favor of the alternative hypothesis $H_1$. Therefore, we can say that at an $\alpha$ = 0.05 level, the years of experience for someone who has defaulted differs significantly from the years of experience for someone who has not-defaulted.
 
+##### Years in Current Job for Defaulted vs Non-defaulted
 
 We know overall job experience and years in current job are highly correlated, but it is still worth examining them separately even if we it is likely we'll see the same result. Our hypotheses for years in current job are as follows:  
 
@@ -349,6 +358,7 @@ ttest2sample_currentjob
 
 Our test again shows our p-value of `r format(ttest2sample_currentjob$p.value, scientific=TRUE, digits = 3)` is less than our $\alpha$, so we can reject the null hypothesis in favor of the alternative hypothesis. Therefore, at the $\alpha$ = 0.05 level, we can say that years in current job differs significantly between those who have defaulted and those who haven't.
 
+##### Average Age for Defaulted vs Non-defaulted
 
 Lastly, we'll examine age and if customers who default on loans are significantly younger than those who do not. We'll set up our age hypotheses as follows:  
 
