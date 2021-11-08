@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2021-11-07" />
+<meta name="date" content="2021-11-08" />
 
 <title>Mini Project Team 2</title>
 
@@ -1801,7 +1801,7 @@ div.tocify {
 
 
 <h1 class="title toc-ignore">Mini Project Team 2</h1>
-<h4 class="date">2021-11-07</h4>
+<h4 class="date">2021-11-08</h4>
 
 </div>
 
@@ -1851,16 +1851,18 @@ sum(is.na(loandata$Income))
 #outlierKD2(not_defaulted, Income, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
 #outlierKD2(not_defaulted, Experience, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
 #outlierKD2(not_defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)</code></pre>
-<div id="executive-summary" class="section level4">
-<h4>Executive Summary:</h4>
+<div id="project-consumer-loans-in-india" class="section level2">
+<h2>Project: Consumer Loans in India</h2>
+<div id="executive-summary" class="section level3">
+<h3>Executive Summary:</h3>
 <p>We are analyzing consumer loan data in India, sourced from Kaggle. We are analyzing the relationship between several variables and loan default status including income, home ownership, job experience, etc. With the exception of income, all variables tested were significant.</p>
 </div>
-<div id="information-gathered" class="section level4">
-<h4>Information Gathered:</h4>
+<div id="information-gathered" class="section level3">
+<h3>Information Gathered:</h3>
 <p>All the information was collected at the time of the loan application, according to the Kaggle description. The author of the dataset doesn’t give more specifications about the dataset. The only context he provides is that the dataset belongs to the institution Univ Ai; it was used in their hackathon. The uniform distribution of the data and the limited features of the dataset provided can lead us to believe that the dataset may have been artificially created. We tried to contact the owner of the dataset, but no answer was given.</p>
 </div>
-<div id="dataset" class="section level4">
-<h4>Dataset:</h4>
+<div id="dataset" class="section level3">
+<h3>Dataset:</h3>
 <p>There is existing research on loan defaults and what variables tend to correlate with it in the United States. For our purposes, we wanted to understand if we would see similar dependencies in India for their consumer loan portfolios. In the US, income correlates highly with default status, where we utilize transformations such as debt-to-income ratios and won’t lend to individuals who don’t have the financial means to pay it back. Another common feature is that a way to determine creditworthiness (essentially a measure of the likelihood someone will pay back a loan) is if someone has trusted you with credit before (and not defaulted on it). In our dataset, we had two proxies for this: owning a home and owning a car, as both typically require consumer loans. Other variables that we know have impacts are employment status (not the job itself, but the existence of the job), age (maturity and income tend to go with age, which will impact responsibility and ability in paying back a loan), and job experience (again, a potential proxy for income). The years of homeownership can be considered a proxy for credit history, as if a loan is required for a home, we know the customer must have a credit history of at least that long, which in the US helps determine how much information on a customer exists. Knowing more information helps banks make more informed decisions, so they’re likelier to loan to customers with extensive history showing ability to pay off loans. This information also goes into the FICO score in the US, but it’s unclear if there’s an equivalent in India for the FICO score. There are two variables in the dataset that we know correlate with default status, but which are illegal in the United States to use in decisioning: age and marital status, as using them is considered discriminatory.</p>
 <p>Using this knowledge, we developed questions designed to see if the Indian consumer loan market has similar correlates with default status as the United States market does. Knowing the income correlate, we asked if we would see a similar interaction in India. We wanted to see if homeownership correlated with default status, as in the US it’s an indicator of ability to make consistent payments against a loan. Likewise, we wanted to understand if time of homeownership correlated with decreases in likelihood of defaulting, which could be considered a proxy of credit history. We also wanted to see if age and marital status correlate in India, since we know they do in the US. One theory is that if they do correlate, we could build a better model than we’re allowed to build in the US, given those regulatory constraints. Therefore, we want to understand if younger customers default more than older customers. Given we said job experience can be used as a proxy, but isn’t problematic to use in the United States, we further thought it’d be interesting to compare age and job experience as predictors of default status. The theory here is that if job experience is a better predictor, then we wouldn’t need to use age in the model at all, while if age is the better predictor, then it’s interesting to note that the proxy performs worse, meaning in the US we may be making worse (albeit completely legal) loan decisions by using the proxy.</p>
 <p>We would like to use this dataset to help us answer a few key questions related to defaulting on loans:</p>
@@ -1873,8 +1875,8 @@ sum(is.na(loandata$Income))
 • Are customers who default on loans younger than those who do not?  </code></pre>
 <p>In order to answer these questions, we need to analyze incomes, home-ownership status, marriage status, years in current house, job experience/experience, and age.</p>
 </div>
-<div id="limitations" class="section level4">
-<h4>Limitations:</h4>
+<div id="limitations" class="section level3">
+<h3>Limitations:</h3>
 <p>There is a variety of additional information that would have been beneficial to our model. Banks ask for a lot of information to give you a loan, and depending on the loan, they may solicit more information. It would have been ideal if our team had the loan amount and loan amount term. It’s important to know the longevity of the loan; potentially, some customers will default on long-term loans but will not default on short-term loans. Concerning the loan amount, it will have also been helpful to have it in our features. The more customer characteristic and loan characteristics will help our model be more accurate. The goal of the bank is to provide loans to the most qualifying customers. When a bank gives out a loan to a client, it ensures that the customer will be able to pay and reduce the chances of customers receiving a more significant loan than they can handle. There are responsibilities in both parts since the bank has the resources to build better models.</p>
 <p>It would have been important if the dataset included the date of the default. Depending on the default date, there may be other factors to consider, such as country political situation, economic crisis, etc. Taking into consideration these parameters of the political environment and instability would be helpful for both the bank and the customer since there are uncontrollable scenarios that banks and customers can not control.</p>
 <p>Other potentially valuable features would have been credit history, gender, number of dependents, education level, and type of loan. Intuitively, credit history would have been one of the most beneficial tools in our model; credit history is not included in the dataset, which is odd. In regards to the gender features, according to Durkeiner, M (2019), “An analysis of Experian credit data found that men are more likely to fall 60 days or more behind on their mortgage payments than women, and, in another consumer debt survey, men were responsible for more than 6 out of 10 defaults. Women tend to take on more debt in their lives overall, yet men still lead in defaults” (p. 2). We would have like to test this on our model, but unfortunately, we lack the features such as gender and delayed loan payments. All these features we mentioned would have been beneficial to explore more on what features affect people’s chance to default. Herron, J (2014) mentions the disparity between gender and loan defaults. “While men may seem to be more comfortable taking on more debt, they also get into financial trouble more often”(p.1).</p>
@@ -2795,6 +2797,7 @@ ttest2sample_age</code></pre>
 <p>Using Chi-Square Test, we were able to determine that the Martial Status and Default status were also dependent of each other. With a p-value: 3.77310^{-26}, we were able to reject our Null Hypothesis of these two characteristics being independent and adopted the alternative as we see a significant dependency on each other.</p>
 <p>Although we can’t confirm if an additional year of home-ownership reduces the likelihood of default, we can say that years of home-ownership differs significantly between those who have defaulted and those who haven’t. Again using the 2 Sample T-test, we are able to state that the years of job experience significantly differs for customers who default vs who do not. At <span class="math inline">\(\alpha\)</span> at 0.05, and p-value at: 8.91e-66, we were able to reject our Null Hypothesis and adopt the Alternate Hypothesis.</p>
 <p>With regards to age, we did see a significant difference in age between the customers who defaulted vs who did not, the customer who defaulted were significantly younger than the ones who did not. Both the job experience and age, negatively correlate with the default status.</p>
+</div>
 </div>
 <div id="appendix" class="section level2">
 <h2>Appendix</h2>

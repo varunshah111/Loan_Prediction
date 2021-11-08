@@ -84,17 +84,18 @@ sum(is.na(loandata$Income))
 
 ```
   
-  
-#### Executive Summary:
+## Project: Consumer Loans in India
+
+### Executive Summary:
 
 We are analyzing consumer loan data in India, sourced from Kaggle. We are analyzing the relationship between several variables and loan default status including income, home ownership, job experience, etc. With the exception of income, all variables tested were significant.
 
-#### Information Gathered:
+### Information Gathered:
 
 All the information was collected at the time of the loan application, according to the Kaggle description. The author of the dataset doesn’t give more specifications about the dataset. The only context he provides is that the dataset belongs to the institution Univ Ai; it was used in their hackathon. The uniform distribution of the data and the limited features of the dataset provided can lead us to believe that the dataset may have been artificially created. We tried to contact the owner of the dataset, but no answer was given.
 
 
-#### Dataset:
+### Dataset:
 
 There is existing research on loan defaults and what variables tend to correlate with it in the United States. For our purposes, we wanted to understand if we would see similar dependencies in India for their consumer loan portfolios. In the US, income correlates highly with default status, where we utilize transformations such as debt-to-income ratios and won’t lend to individuals who don’t have the financial means to pay it back. Another common feature is that a way to determine creditworthiness (essentially a measure of the likelihood someone will pay back a loan) is if someone has trusted you with credit before (and not defaulted on it). In our dataset, we had two proxies for this: owning a home and owning a car, as both typically require consumer loans. Other variables that we know have impacts are employment status (not the job itself, but the existence of the job), age (maturity and income tend to go with age, which will impact responsibility and ability in paying back a loan), and job experience (again, a potential proxy for income). The years of homeownership can be considered a proxy for credit history, as if a loan is required for a home, we know the customer must have a credit history of at least that long, which in the US helps determine how much information on a customer exists. Knowing more information helps banks make more informed decisions, so they’re likelier to loan to customers with extensive history showing ability to pay off loans. This information also goes into the FICO score in the US, but it’s unclear if there’s an equivalent in India for the FICO score. There are two variables in the dataset that we know correlate with default status, but which are illegal in the United States to use in decisioning: age and marital status, as using them is considered discriminatory.  
 
@@ -114,7 +115,7 @@ We would like to use this dataset to help us answer a few key questions related 
 In order to answer these questions, we need to analyze incomes, home-ownership status, marriage status, years in current house, job experience/experience, and age.  
 
 
-#### Limitations:
+### Limitations:
 
 There is a variety of additional information that would have been beneficial to our model. Banks ask for a lot of information to give you a loan, and depending on the loan, they may solicit more information. It would have been ideal if our team had the loan amount and loan amount term. It’s important to know the longevity of the loan; potentially, some customers will default on long-term loans but will not default on short-term loans. Concerning the loan amount, it will have also been helpful to have it in our features. The more customer characteristic and loan characteristics will help our model be more accurate. The goal of the bank is to provide loans to the most qualifying customers. When a bank gives out a loan to a client, it ensures that the customer will be able to pay and reduce the chances of customers receiving a more significant loan than they can handle. There are responsibilities in both parts since the bank has the resources to build better models.   
 
