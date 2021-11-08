@@ -72,15 +72,15 @@ sum(is.na(loandata$CURRENT_HOUSE_YRS))
 sum(is.na(loandata$CURRENT_JOB_YRS))
 sum(is.na(loandata$Income))
 
-outlierKD2(defaulted, Age, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
-outlierKD2(defaulted, Income, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
-outlierKD2(defaulted, Experience, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
-outlierKD2(defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(defaulted, Age, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(defaulted, Income, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(defaulted, Experience, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
 
-outlierKD2(not_defaulted, Age, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
-outlierKD2(not_defaulted, Income, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
-outlierKD2(not_defaulted, Experience, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
-outlierKD2(not_defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(not_defaulted, Age, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(not_defaulted, Income, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(not_defaulted, Experience, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
+#outlierKD2(not_defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=FALSE, histogram=FALSE, qqplt=FALSE)
 
 ```
   
