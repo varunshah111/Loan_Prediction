@@ -1,0 +1,73 @@
+---
+title: "Mini Project Team 2"  
+authors: "By: Cooper Atkins, Ricardo Diaz, Varun Shah, and Nusrat Nawshin"  
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r init, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+library(ezids)
+library(dplyr)
+library(lmtest)
+library(vcd)
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# use scipen=999 to prevent scientific notation at all times
+```
+```{r loanpredict, results='markup'}
+#Import dataset
+loanpredict <- read.csv("Training Data.csv", header = TRUE)
+#Convert necessary variables to factors/categoricals and set appropriate level titles
+loanpredict$Married.Single <- recode_factor(loanpredict$Married.Single, single = "Single", married = "Married")
+loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented = "Renting", owned = "Owning", norent_noown = "Neither")
+loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
+#Remove variables that won't help in our analysis
+loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
+str(loandata)
+```
+
+```{r, results='markup'}
+
+defLogit <- glm(Risk_Flag ~ Income +Age +Experience+Married.Single+House_Ownership+Car_Ownership+CURRENT_JOB_YRS+CURRENT_HOUSE_YRS , data = loandata, family = "binomial")
+summary(defLogit)
+
+xkabledply(defLogit, title = paste("Logistic Regression :", format(formula(defLogit)) ))
+```
+
+
+
+```{r}
+unique(loandata$Risk_Flag)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
