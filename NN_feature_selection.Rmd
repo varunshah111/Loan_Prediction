@@ -38,36 +38,51 @@ loanpredict <- read.csv("Training Data.csv", header = TRUE)
 loanpredict$Married.Single <- recode_factor(loanpredict$Married.Single, single = "Single", married = "Married")
 loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented = "Renting", owned = "Owning", norent_noown = "Neither")
 loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
+loanpredict$Risk_Flag <- factor(loanpredict$Risk_Flag)
 #Remove variables that won't help in our analysis
 loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
 str(loandata)
+summary(loandata)
 ```
 
+
+Full Model:
 ```{r, results='markup'}
 
-defLogit <- glm(Risk_Flag ~ Income +Age +Experience+Married.Single+House_Ownership+Car_Ownership+CURRENT_JOB_YRS+CURRENT_HOUSE_YRS , data = loandata, family = "binomial")
+#defLogit <- glm(Risk_Flag ~ Income +Age +Experience+Married.Single+House_Ownership+Car_Ownership+CURRENT_JOB_YRS+CURRENT_HOUSE_YRS , data = loandata, family = "binomial")
+defLogit <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
 summary(defLogit)
 
 xkabledply(defLogit, title = paste("Logistic Regression :", format(formula(defLogit)) ))
 ```
 
 
-
+Forward selection:
 ```{r}
-unique(loandata$Risk_Flag)
+library(MASS)
+ 
+stepAIC(defLogit, direction = "forward", trace = FALSE)
 ```
 
 
 
 
+Backward selection:
+
+```{r}
+#library(MASS)
+ 
+stepAIC(defLogit, direction = "backward", trace = FALSE)
+```
 
 
+```{r}
+library(caret)
+varImp(defLogit)
+```
 
+```{r}
 
-
-
-
-
-
+```
 
 
