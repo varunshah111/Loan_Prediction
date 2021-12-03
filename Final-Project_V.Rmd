@@ -56,12 +56,23 @@ loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
 #Create summary table of remaining variables
 xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
 
+loandata$Risk_Flag <- recode_factor(loandata$Risk_Flag, "0" = "Non-Defaulted", "1" = "Defaulted")
+
+str(loandata)
+
 ```
 
     
 Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loanpredict$income)` Rupees and a maximum of `r max(loanpredict$income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately $\$$`r round(min(loanpredict$income)*0.013, digits=2)` and the maximum is approximately $\$$`r round(max(loanpredict$income)*0.013, digits=2)`.
 
 
+#####
+
+```{r}
+xtabs(~ Risk_Flag + House_Ownership, data = loandata)
+xtabs(~ Risk_Flag + Married.Single, data = loandata)
+xtabs(~ Risk_Flag + Car_Ownership, data = loandata)
+```
 
 
 
@@ -71,9 +82,11 @@ Examining our summary results, we can determine that Marriage Status, House Owne
 
 #### Spliting the data into training and test sets:
 
+
+
 ```{r}
 set.seed(123)
-ind = sample(2, nrow(loandata), replace = TRUE, prob = c(0.7, 0.3))
+ind = sample(2, nrow(loandata), replace = TRUE, prob = c(0.75, 0.25))
 train = loandata[ind==1,]
 test = loandata[ind==2,]
 str(test)
@@ -87,16 +100,25 @@ table(test$Risk_Flag)
 
 ```{r}
 loadPkg("bestglm")
+
+X <- subset(train, select = c(1:8) )
+y <- subset(train, select = c(9) )
+
+Xy<-as.data.frame(cbind(X,y))
+
 riskbestglm <- bestglm(Xy = train, family = binomial, 
                        IC = "AIC",method = "exhaustive")     
 
-
-                    
 riskbestglm                       
 summary(riskbestglm)
 riskbestglm$BestModels
 summary(riskbestglm$BestModels)
- 
+```
+
+```{r}
+loadPkg("regclass")
+confusion_matrix(riskbestglm$BestModel)
+unloadPkg("regclass")
 ```
 
 Based on the above, out of 7 variables, Income is not significant at 5%. 
@@ -115,6 +137,10 @@ summary(riskbestglm_bic$BestModels)
 
 ```
 
+
+### VIF Check
+
+
 ### Cross-Validation
 
 ```{r}
@@ -124,14 +150,18 @@ summary(riskbestglm_bic$BestModels)
 
 
 ```{r}
-str(loandata)
-riskLogit <- glm(Risk_Flag ~ Age + Experience + Married.Single + House_Ownership + Car_Ownership, data = loandata, family = "binomial")
+#str(loandata)
+riskLogit <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
 
-riskLogit
+summary(riskLogit)
 ```
 
 ```{r}
-summary(riskLogit)
+
+loadPkg("regclass")
+xkabledply(confusion_matrix(riskLogit))
+unloadPkg("regclass")
+
 
 ```
 
