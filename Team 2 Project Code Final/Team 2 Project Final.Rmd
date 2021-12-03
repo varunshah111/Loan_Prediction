@@ -1,0 +1,834 @@
+---
+title: "Mini Project Team 2"
+authors: "By: Cooper, Ricardo, Varun, and Alton"
+#date: "today"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r init, include=FALSE}
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+library(ezids)
+library(dplyr)
+library(lmtest)
+library(vcd)
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
+# use scipen=999 to prevent scientific notation at all times
+```
+
+Let's first import our dataset before we do any analysis. Our dataset is based on possible variables that could be used to predict loan default status for employed individuals in India.
+
+```{r loanpredict}
+#Import dataset
+loanpredict <- read.csv("Training Data.csv", header = TRUE)
+str(loanpredict)
+#Convert necessary variables to factors/categoricals and set appropriate level titles
+loanpredict$Married.Single <- recode_factor(loanpredict$Married.Single, single = "Single", married = "Married")
+
+loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented = "Renting", owned = "Owning", norent_noown = "Neither")
+
+loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
+
+str(loanpredict)
+names(loanpredict)
+```
+
+
+Our dataset has a total of `r nrow(loanpredict)` data points and `r ncol(loanpredict)-1` variables that we can use to assess the likelihood of someone defaulting on their loan. That being said, we may want to shrink our dataset down to only the ones that an provide some value in our analysis. Therefore, we'll remove the indexing column "ID" as well as the columns "Profession", "City", and "State" because they have too many distinct values for us to get true value from in our analysis. We will then run a summary analysis to get a better idea of our remaining variables
+
+<<<<<<< HEAD
+```{r EDA_basicstats, result = TRUE}
+=======
+```{r EDA_basicstats, results='show'}
+>>>>>>> main
+#Remove variables that won't help in our analysis
+loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
+
+#Create summary table of remaining variables
+xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
+str(loandata)
+<<<<<<< HEAD
+
+```
+
+=======
+```
+>>>>>>> main
+    
+Examining our summary results, we can determine that Marriage Status, House Ownership, and Car Ownership are categorical variables of some interest to us. Income as quite a wide range of possible values with a minimum of `r min(loanpredict$Income)` Rupees and a maximum of `r max(loanpredict$Income)` rupees. We'll keep this data in the form of Rupees for analysis, but for context this minimum is approximately  `r round(min(loanpredict$Income)*0.013, digits=2)` USD and the maximum is approximately `r round(max(loanpredict$Income)*0.013, digits=2)` USD.
+
+
+Before we continue further, let's subset our data depending on if the individual defaulted on their loan or not.
+
+```{r}
+#Selecting only values where the customer defaulted
+defaulted <- subset(loandata, Risk_Flag == 1)
+
+#Selecting only values where the customer did not default
+not_defaulted <- subset(loandata, Risk_Flag == 0)
+```
+
+Let's first examine the population of customers who have not defaulted on their loans.
+<<<<<<< HEAD
+```{r}
+=======
+
+```{r ,results='show'}
+>>>>>>> main
+#Summary for non-defaulted customers
+xkablesummary(not_defaulted, title = "Summary of Data for Non-Defaulted Customers")
+```
+
+Looking at the summary data for non-defaulted customers, we can see that the majority of these customers rent their home, own a car, and are not married. Their average age is `r mean(not_defaulted$Age)` years old and they have, on average `r mean(not_defaulted$Experience)` years of experience working. Further, these customers have an average income of `r mean(not_defaulted$Income)` Rupees. These customers also have an average of `r mean(not_defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(not_defaulted$CURRENT_HOUSE_YRS)` years.
+
+<<<<<<< HEAD
+```{r}
+=======
+```{r, results='show'}
+>>>>>>> main
+#Summary for defaulted customers
+xkablesummary(defaulted, title = "Summary of Data for Defaulted Customers")
+```
+
+<<<<<<< HEAD
+For the defaulted customers, we can see that they, like the non-defaulted population, primarily rent, own a car, and are not married. They have an average income of RESOLVE!`r mean(defaulted$Income)` Rupees. These customers also have an average of `r mean(defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(defaulted$CURRENT_HOUSE_YRS)` years. Their average age is `r mean(defaulted$Age)` years old and they have, on average `r mean(defaulted$Experience)` years of experience working.
+
+Based on what we're seeing here, we would like to use this dataset to help us answer a few key questions related to defaulting on loans:
+
+	• Do customers who default on loans have statistically lower incomes than those who don't default?
+	• Does home-ownership correlate with lower rates of default?
+	• Does being married decrease the likelihood of default?
+	• Does an additional year of home-ownership reduce the likelihood of default?
+	• Does job experience or age show a larger impact on someone defaulting on their loan?
+		○ Within that, do job experience and age both negatively correlate with loan defaults?
+	• Are customers who default on loans younger than those who do not?
+
+In order to answer these questions, we need to analyze incomes, home-ownership status, marriage status, years in current house, job experience/experience, and age.
+
+Looking at some basic graphs of our data, it's a bit difficult to assess any clear and obvious relationships.
+=======
+For the defaulted customers, we can see that they, like the non-defaulted population, primarily rent, own a car, and are not married. They have an average income of RESOLVE! `r mean(defaulted$Income)` Rupees. These customers also have an average of `r mean(defaulted$CURRENT_JOB_YRS)` years working at their current jobs, and have lived in their current houses (or apartments, condos, etc.) for an average of `r mean(defaulted$CURRENT_HOUSE_YRS)` years. Their average age is `r mean(defaulted$Age)` years old and they have, on average `r mean(defaulted$Experience)` years of experience working.
+
+Based on what we're seeing here, we would like to use this dataset to help us answer a few key questions related to defaulting on loans:  
+
+	• Do customers who default on loans have statistically lower incomes than those who don't default?  
+	• Does home-ownership correlate with lower rates of default?  
+	• Does being married decrease the likelihood of default?  
+	• Does an additional year of home-ownership reduce the likelihood of default?  
+	• Does job experience or age show a larger impact on someone defaulting on their loan?  
+		○ Within that, do job experience and age both negatively correlate with loan defaults?  
+	• Are customers who default on loans younger than those who do not?  
+	
+
+In order to answer these questions, we need to analyze incomes, home-ownership status, marriage status, years in current house, job experience/experience, and age.  
+
+Looking at some basic graphs of our data, it's a bit difficult to assess any clear and obvious relationships.  
+
+>>>>>>> main
+```{r}
+#Box-plot
+pairs(loandata)
+```
+
+<<<<<<< HEAD
+So, let's look at the correlation of our variables before we dig in deeper and use our assumptions that drove our questions.
+=======
+So, let's look at the correlation of our variables before we dig in deeper and use our assumptions that drove our questions.  
+
+>>>>>>> main
+```{r}
+#Import necessary library
+library(corrplot)
+
+#Subset out numerical variables for correlation analysis
+numericalloan <- subset(loandata, select = c(Income, Age, Experience, CURRENT_JOB_YRS, CURRENT_HOUSE_YRS, Risk_Flag))
+
+#Run correlation
+correlation = cor(numericalloan)
+
+xkabledply(correlation)
+#Make the plot look presentable
+<<<<<<< HEAD
+corrplot(correlation, method = 'circle', type = 'upper', title = "Correlation Plot for Numerical Loan Variables")
+
+corrplot.mixed(correlation)
+```
+Examining the correlation plot, we see that Experience and # of years in the job are highly correlated, which is expected. No other variables appear to show strong correlations with each other or with risk flags. We can examine this further as we look into the difference between the the defaulted and non-defaulted populations.
+
+Let's start with income and examine the boxplots of those who defaulted vs. those who did not.
+=======
+corrplot(correlation, method = 'circle', type = 'upper', 
+         title = "Correlation Plot for Numerical Loan Variables",
+         mar=c(0,0,2,0))
+
+corrplot.mixed(correlation)
+```
+  
+  
+Examining the correlation plot, we see that Experience and # of years in the job are highly correlated, which is expected. No other variables appear to show strong correlations with each other or with risk flags. We can examine this further as we look into the difference between the the defaulted and non-defaulted populations.  
+
+Let's start with income and examine the boxplots of those who defaulted vs. those who did not.  
+
+>>>>>>> main
+```{r}
+#Import necessary library
+library("ggplot2")
+
+#Convert Risk_Flag to factor level
+loandata$Risk_Flag <- recode_factor(loandata$Risk_Flag, "0" = "Non-Defaulted", "1" = "Defaulted")
+
+ggplot(loandata, aes(x=Risk_Flag, y=Income)) + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4)+
+  labs(title="Income based on Loan Default Status",x="Default Status", y = "Income")
+
+<<<<<<< HEAD
+
+```
+
+Examing these boxplots, we don't see any inherent difference in the income levels for those who have and haven't defaulted on their loans. We will still conduct a statistical test later to confirm that income doesn't differ significantly, but for now we will simply say that it doesn't appear to differ between our populations.
+
+Let's now examine home-ownership rates relative to default status.
+```{r}
+cont_table_housing <- table(loandata$House_Ownership, loandata$Risk_Flag)
+xkabledply(cont_table_housing, title="Contingency table for Home-Ownership vs. Loan Default Status")
+```
+Looking at our contingency table, we can see that Renting is clearly the most common form of housing for both populations, followed by owning a home, and lastly by neither owning nor renting their home. It's a bit tricky to assess proportions from this, but we will later be conducting a chi-square test to determine if the proportions differ between the two populations.
+
+Next, let's examine marital status vs. loan default status.
+```{r}
+=======
+```
+
+Examing these boxplots, we don't see any inherent difference in the income levels for those who have and haven't defaulted on their loans. We will still conduct a statistical test later to confirm that income doesn't differ significantly, but for now we will simply say that it doesn't appear to differ between our populations.  
+
+Let's now examine home-ownership rates relative to default status.  
+
+```{r, results='show'}
+cont_table_housing <- table(loandata$House_Ownership, loandata$Risk_Flag)
+xkabledply(cont_table_housing, title="Contingency table for Home-Ownership vs. Loan Default Status")
+```
+Looking at our contingency table, we can see that Renting is clearly the most common form of housing for both populations, followed by owning a home, and lastly by neither owning nor renting their home. It's a bit tricky to assess proportions from this, but we will later be conducting a chi-square test to determine if the proportions differ between the two populations.  
+
+Next, let's examine marital status vs. loan default status.  
+
+```{r, results='show'}
+>>>>>>> main
+cont_table_marriage <- table(loandata$Married.Single, loandata$Risk_Flag)
+xkabledply(cont_table_marriage, title="Contingency table for Marriage Status vs. Loan Default Status")
+```
+
+Again, for both those who have defaulted on their loans and those who haven't, we see that more individuals are single than married. As with home-ownership, it's tricky to determine by eyeing it, whether the proportions differ significantly. Therefore, we will again conduct a chi-square test later, to assess if these are statistically significant differences in proportion.
+
+Next, let's assess years of home-ownership against default status. We'll once again use a box-plot for this.
+
+```{r}
+ggplot(loandata, aes(x=Risk_Flag, y=CURRENT_HOUSE_YRS)) + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4)+
+  labs(title="Years in Current House based on Loan Default Status",x="Default Status", y = "Years in Current House")
+
+```
+
+As before with income, we see that the boxplots appear almost identical. We'll have to use a test to determine if there is a statistically significant difference between the years in housing for those who have defaulted on their loans and those who haven't.
+
+Next, we'll assess both experience in the current job and overall job experience relative to loan default status.
+
+```{r}
+ggplot(loandata, aes(x=Risk_Flag, y=CURRENT_JOB_YRS)) + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4)+
+  labs(title="Years in Current Job based on Loan Default Status",x="Default Status", y = "Years in Current Job")
+```
+
+
+```{r}
+ggplot(loandata, aes(x=Risk_Flag, y=Experience)) + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4)+
+  labs(title="Years Overall Job Experience based on Loan Default Status",x="Default Status", y = "Total Job Experience")
+```
+
+
+Although the top end of the boxplots look relatively similar, it's important to note that in both current job experience and overall job experience, the lower bound of the IQR for defaulted customers, is lower than for non-defaulted customers. As with all of our other variables, we'll conduct testing to determine if this is a significant difference between defaulted and non-defaulted customers.
+
+Lastly, we'll assess the age of customers relative to their loan default status
+
+```{r}
+ggplot(loandata, aes(x=Risk_Flag, y=Age)) + 
+  geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4)+
+  labs(title="Age based on Loan Default Status",x="Default Status", y = "Age")
+```
+
+Although the difference appears subtle, we can see that the boxplot for Defaulted customers is slightly lower than for non-defaulted customers. This would imply, potentially, that defaulted customers are slightly younger than non-defaulted customers. We'll again conduct a test to confirm if this hypothesis is correct.
+
+
+
+
+Although we didn't see any indication of outliers or NA values in our boxplots and preliminary data checks, it's still worthwhile to confirm that before we proceed with our analysis.
+
+### Checking for NA values and outliers 
+```{r, results='hide'}
+
+str(loandata)
+sum(is.na(loandata$Age))
+sum(is.na(loandata$Income))
+sum(is.na(loandata$Experience))
+sum(is.na(loandata$Married.Single))
+sum(is.na(loandata$House_Ownership))
+sum(is.na(loandata$Car_Ownership))
+sum(is.na(loandata$CURRENT_HOUSE_YRS))
+sum(is.na(loandata$CURRENT_JOB_YRS))
+sum(is.na(loandata$Income))
+
+outlierKD2(defaulted, Age, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(defaulted, Income, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(defaulted, Experience, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+
+outlierKD2(not_defaulted, Age, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(not_defaulted, Income, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(not_defaulted, Experience, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+outlierKD2(not_defaulted, CURRENT_JOB_YRS, rm=TRUE, boxplt=TRUE, histogram=TRUE, qqplt=TRUE)
+
+```
+
+Before we get to our statistical testing, let's confirm our quantitative variables all follow the required normality assumptions. To do that, we'll go ahead and examine a histogram and Q-Q Plot for each variables, make a visual assessment of normality to confirm our assumptions. We will conduct this assessment separately for Defaulted and Non-Defaulted customers to ensure that each population follows the normal distribution.
+
+## Assesment non-defaulted population.
+We'll go ahead and start with our population that did not default on their loans before moving onto the population that did default.
+
+```{r, include=FALSE}
+# Package to make graphs next to each other
+loadPkg("gridExtra")
+
+
+```
+
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> main
+### Analysis for Age
+```{r}
+
+#str(loandata)
+
+
+ggplot(data=not_defaulted, aes(Age)) + 
+  geom_histogram(aes(y=..density..), binwidth = 2,
+                 col="aquamarine4", 
+                 fill="aquamarine2", 
+                 alpha = .7) + 
+  labs(title="Non-defaulted Customers Age Histogram") +
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Age, na.rm = TRUE), sd = sd(not_defaulted$Age, na.rm = TRUE))) + 
+  labs(x="Age", y="Frequency") 
+
+qqnorm(not_defaulted$Age, main="Q-Q plot of Age level of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$Age, col = 'red')
+
+
+##shapiro.test(not_defaulted$Age) sample size to big to conduct a shapiro test, not necessary 
+
+
+```
+
+Looking at the histogram, we can see a distinctly uniform distribution. Similarly, the QQ-plot seems to back this up by showing thicker tails than we would see for a normal distribution. Because we will be making inference on the sample average, and not an individual sample point, we will still be making inference on a normally distributed variable (by virtue of the Central Limit Theorem).
+
+
+### Analysis for Income
+
+```{r}
+<<<<<<< HEAD
+# ggplot(not_defaulted, aes(y=Income)) + 
+#   geom_boxplot() + 
+#   geom_boxplot( colour="orange", fill="#7777cc", outlier.colour="red", outlier.shape=8, outlier.size=4) +
+#   labs(title="Not_Defaulted Customer Income boxplot ",x="", y = "weight (lbs)")
+=======
+>>>>>>> main
+
+ggplot(data=not_defaulted, aes(Income)) +
+  geom_histogram(aes(y=..density..),
+                 col="dodgerblue4",
+                 fill="dodgerblue2",
+                 alpha = .7) +
+  labs(title="Non-defaulted Customers Income Histogram") +
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Income, na.rm = TRUE), sd = sd(not_defaulted$Income, na.rm = TRUE))) +
+  labs(x="Income", y="Frequency")
+
+qqnorm(not_defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$Income, col = 'red')
+```
+Again, our histogram shows a relatively uniform distribution when we have sufficiently large bin sizes, which is confirmed with the heavy tails seen in the QQ-plot.
+
+### Analysis for Experience
+
+```{r}
+#str(loandata)
+
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
+ggplot(data=not_defaulted, aes(Experience)) + 
+  geom_histogram(aes(y=..density..), binwidth = 1,
+                 col="gold4", 
+                 fill="gold2", 
+                 alpha = .7) + 
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$Experience), sd = sd(not_defaulted$Experience))) + 
+  labs(title="Non-defaulted Job Experience Histogram") +
+  labs(x="Experience", y="Frequency") 
+
+
+qqnorm(not_defaulted$Experience, main="Q-Q plot of Job Experience of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$Experience, col = 'red')
+
+```
+
+Again, our histogram is showing a uniform distribution, and our QQ-Plot confirms it. Of note, on the QQ-plot is the discrete nature of the data. Because we're working in years of experience, it would not make sense to have the data in decimals, but it is clearly a ratio type, so we should not turn this into a categorical variable.
+
+### Analysis for Current House Years
+
+```{r}
+ggplot(data=not_defaulted, aes(CURRENT_HOUSE_YRS)) + 
+  geom_histogram(aes(y=..density..), binwidth = 1,
+                 col="brown4", 
+                 fill="brown2", 
+                 alpha = .7) + 
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(not_defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
+<<<<<<< HEAD
+  labs(title="Non-defaulted Customers years in Current Home Histogram") +
+=======
+  labs(title="Non-defaulted Customers Years in Current Home Histogram") +
+>>>>>>> main
+  labs(x='Years in Current Home', y="Frequency") 
+
+
+qqnorm(not_defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$CURRENT_HOUSE_YRS, col = 'red')
+
+```
+
+As with years of job experience, we see the data is uniformly distributed and that, by the nature of the variable, the QQ-plot shows a discrete pattern. Again, for our analysis purposes, this is a ratio data type and we will want to understand how default status changes for a 1 year change in years in current house will impact default status. Therefore, we will keep this as a continuous variable for our purposes.
+
+
+### Analysis for Current Job Years
+
+```{r}
+
+ggplot(data=not_defaulted, aes(CURRENT_JOB_YRS)) + 
+  geom_histogram(aes(y=..density..), binwidth = 1,
+                 col="burlywood4", 
+                 fill="burlywood2", 
+                 alpha = .7) + 
+  labs(title="Non-defaulted Years in Current Job Histogram") +
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(not_defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
+  labs(x="Years in Current Job", y="Frequency") 
+
+
+qqnorm(not_defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job Years of Not Defaulted Customers", col = 'seagreen3') 
+qqline(not_defaulted$CURRENT_JOB_YRS, col = 'red')
+
+```
+
+
+Different from our other variables, Years in Current Job is showing a semi-exponential distribution with a uniform left tail. The QQ-plot backs up these assumptions with the normal middle of the graph, and weighted tails. As mentioned earlier, based on our inference using the sample average, we will still be working with a normally distributed variable based on Central Limit Theorem.
+
+
+## Assesment defaulted population.
+Now, we will examine the same variables for the defaulted population. The key here is that the defaulted population should follow the same distribution types as we saw for the non-defaulted population.
+
+### Analysis for Age
+```{r}
+ggplot(data=defaulted, aes(Age)) + 
+  geom_histogram(aes(y=..density..),
+                 binwidth = 2,
+                 col="darkolivegreen4", 
+                 fill="darkolivegreen2", 
+                 alpha = .7) + 
+<<<<<<< HEAD
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Age, na.rm = TRUE), sd = sd(defaulted$Age, na.rm = TRUE))) + # opacity
+=======
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Age, na.rm = TRUE), sd = sd(defaulted$Age, na.rm = TRUE))) + 
+>>>>>>> main
+  labs(title="Defaulted Customers Age Histogram") +
+  labs(x="Age", y="Frequency") 
+
+
+qqnorm(defaulted$Age, main="Q-Q plot of Age Defaulted Customers", col = 'royalblue2' ) 
+qqline(defaulted$Age, col = 'red')
+
+
+```
+
+
+
+The histogram shows a semi-uniform distribution, which is what we would expect. The distribution looks less "smooth" than the non-defaulted population, which is expected due to the skewed sample sizes within each population. Our QQ-plot again agrees with our assessment, with a fairly normal middle of the QQ-plot and heavy tails on either side.
+
+
+### Analysis for Income
+
+
+```{r}
+ggplot(data=defaulted, aes(Income)) +
+  geom_histogram(aes(y=..density..),
+                 col="magenta4",
+                 fill="magenta2",
+                 alpha = .7) +
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Income, na.rm = TRUE), sd = sd(defaulted$Income, na.rm = TRUE))) +
+  labs(title="Defaulted Customers Income Histogram") +
+  labs(x="Income", y="Frequency")
+
+<<<<<<< HEAD
+qqnorm(defaulted$Income, main="Q-Q plot of Income level of Not Defaulted Customers", col = 'royalblue2') 
+=======
+qqnorm(defaulted$Income, main="Q-Q plot of Income of Defaulted Customers", col = 'royalblue2') 
+>>>>>>> main
+qqline(defaulted$Income, col = 'red')
+
+```
+As expected, income again shows a uniform distribution and our QQ-plot agrees. This is what we saw with our non-defaulted population, so the two sample buckets match in distribution.
+
+
+### Analysis for Experience
+
+```{r}
+#str(loandata)
+ggplot(data=defaulted, aes(Experience)) + 
+  geom_histogram(aes(y=..density..),
+                 binwidth = 1,
+                 col="darkorange4", 
+                 fill="darkorange2", 
+                 alpha = .7) + 
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$Experience, na.rm = TRUE), sd = sd(defaulted$Experience, na.rm = TRUE))) +
+  labs(title="Defaulted Experience Histogram") +
+  labs(x="Experience", y="Frequency") 
+
+qqnorm(defaulted$Experience, main="Q-Q plot of Years of Job Experience of Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$Experience, col = 'red')
+
+
+```
+
+Once again, we see a uniform distribution, as expected, which agrees with our non-defaulted sample population. Further, our QQ-plot again shows this with the heavily weighted tails.
+
+
+### Analysis for Years in Current home
+
+```{r}
+
+ggplot(data=defaulted, aes(CURRENT_HOUSE_YRS)) + 
+  geom_histogram(aes(y=..density..),
+                 binwidth = 1,
+                 col="ivory4", 
+                 fill="ivory2", 
+                 alpha = .7) + 
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_HOUSE_YRS, na.rm = TRUE))) +
+  labs(title="Defaulted Years in Current Home Histogram") +
+<<<<<<< HEAD
+  labs(x="Experience", y="Frequency") 
+=======
+
+  labs(x="Years in Current Home", y="Frequency") 
+
+  labs(x="Current Home", y="Frequency") 
+
+>>>>>>> main
+
+qqnorm(defaulted$CURRENT_HOUSE_YRS, main="Q-Q plot of Years in Current Home, for Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$CURRENT_HOUSE_YRS, col = 'red')
+
+
+```
+
+As with our non-defaulted population, experience is uniformly distributed and has a discrete appearing QQ-plot. Again, we will leave this variable as a quantitative variable so that we can assess the impacts of 1 more year of experience impacting our variable.
+
+
+### Analysis for Years in Current Job 
+
+```{r}
+ggplot(data=defaulted, aes(CURRENT_JOB_YRS)) + 
+  geom_histogram(aes(y=..density..),
+                 binwidth = 1,
+                 col="lightpink4", 
+                 fill="lightpink2", 
+                 alpha = .7) + 
+  stat_function(fun=dnorm, lwd = 1, col = 'red', args = list(mean = mean(defaulted$CURRENT_JOB_YRS, na.rm = TRUE), sd = sd(defaulted$CURRENT_JOB_YRS, na.rm = TRUE))) +
+  labs(title="Defaulted - Years in Current Job Histogram") +
+  labs(x="Years in Current Job", y="Frequency") 
+
+qqnorm(defaulted$CURRENT_JOB_YRS, main="Q-Q plot of Years in Current Job, for Defaulted Customers", col = 'royalblue2') 
+qqline(defaulted$CURRENT_JOB_YRS, col = 'red')
+```
+Again, we see that years in current job appears to follow a relatively exponential distribution with a uniform left tail. This matches the non-defaulted sample distribution, so we can make inference on this mixed distribution. The QQ-plot further demonstrates this and, again, because we will make inference on the normally distributed sample mean (Central Limit Theorem), we will be able to conduct inferential statistics on our samples.
+
+Now that we've confirmed the distributions of our two samples are within the same distribution families, we can go ahead and begin our statistical analyses to try and answer our posed questions.
+
+<<<<<<< HEAD
+### Qualitative Data Tests
+=======
+## Qualitative Data Tests
+>>>>>>> main
+
+First, lets deal with our qualitative data.
+
+### Chi-Square Test 
+
+Let's conduct our chi-square test for if home-ownership rates differ between those who default and those who don't. Although a dependency may seem apparent, because our loans are not explicitly home loans, but rather consumer loans, which include car loans, home loans, wedding loans, student loans, etc. we will still analyze the dependency or independency of home-ownership and laon defaults. We set up our home_ownership hypotheses as follows:  
+
+
+
+$H_0$: Home Ownership Status and Loan Status are independent  
+
+$H_1$: Home Ownership Status and Loan Status are dependent  
+
+
+
+
+As per usual, we will use $\alpha$ = 0.05.
+
+<<<<<<< HEAD
+```{r}
+=======
+```{r, results='show'}
+>>>>>>> main
+
+#contigeny table
+contable_housing = table(loandata$House_Ownership, loandata$Risk_Flag)
+xkabledply(contable_housing, title = 'Contigency table for Risk Flag vs House Ownership ')
+chitest_housing = chisq.test(contable_housing)
+
+#To output results
+chitest_housing
+```
+
+
+```{r}
+library(lmtest)
+library(grid)
+library(vcd)
+
+#Graphical representation of chi-square plot
+mosaic(~ Risk_Flag + House_Ownership ,
+  direction = c("v", "h"),
+  data = loandata,
+  shade = TRUE
+)
+
+```
+
+This Chi-squared test shows that pvalue = `r chitest_housing$p.value` which means is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H_1$. After this test we reject our $H_0$ and accept $H_1$ Home Ownership Status and Loan Status are dependent. Knowing the value of one variables helps to predict the value of the other variable.
+<<<<<<< HEAD
+
+
+=======
+  
+  
+>>>>>>> main
+Next, we'll assess if marital status has an impact on default status. We set up our marital status hypotheses as follows:  
+
+
+
+$H_0$: Marital Status and Loan Status are independent  
+
+$H_1$: Marital Status and Loan Status are dependent  
+
+
+
+
+<<<<<<< HEAD
+As per usual, we will use $\alpha$ = 0.05.
+
+```{r}
+=======
+As per usual, we will use $\alpha$ = 0.05.  
+
+```{r, results='show'}
+>>>>>>> main
+
+contable_marital = table(loandata$Married.Single, loandata$Risk_Flag)
+xkabledply(contable_marital, title = 'Contigency table for Risk Flag vs Marital Status ')
+chitest_marital = chisq.test(contable_marital)
+chitest_marital
+```
+
+```{r}
+
+#Produces graphical representation of chi-square
+mosaic(~ Risk_Flag + Married.Single ,
+  direction = c("v", "h"),
+  data = loandata,
+  shade = TRUE
+)
+
+```
+<<<<<<< HEAD
+
+
+When we examine the Chi-squared test shows of Risk Flag vs Marital the pvalue = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.
+=======
+  
+  
+When we examine the Chi-squared test shows of Risk Flag vs Marital the p-value = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H1_0$. After this test we are assuming Marital Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.  
+
+
+When we examine the Chi-squared test shows of Risk Flag vs Marital the p-value = `r chitest_marital$p.value`  is statistically significant and indicates strong evidence against $H_0$ therefore we adopt $H_1$. After this test we are assuming Home Ownership Status and Loan Status are not independent. Therefore knowing the value of one variable helps to predict the value of the other variable.  
+>>>>>>> main
+
+
+## Quantitative Variables
+
+<<<<<<< HEAD
+## T-test
+=======
+## Two Sample T-Test
+>>>>>>> main
+
+Now we'll move back to our quantitative variables.
+
+First, let's analyze the income levels and if they differ significantly for defaulted vs. non-defaulted customers. Given that we are trying to assess if customers who have defaulted have lower incomes than those who haven't, we would set up our hypothesis test as follows:  
+
+$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$  
+
+
+
+<<<<<<< HEAD
+As per usual, we will use $\alpha$ = 0.05.
+
+
+```{r}
+=======
+As per usual, we will use $\alpha$ = 0.05.  
+
+```{r, results='show'}
+>>>>>>> main
+ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income, alternative = 'less')
+#Output results
+ttest2sample_incomes
+```
+
+<<<<<<< HEAD
+Here we fail to reject the Null Hypothesis $H_0$. We do not have enough evidence that the average income of defaulted vs. non-defaulted customers is different. We fail to reject th enull hypothesis with a p-value of `r format(ttest2sample_incomes$p.value, scientific=FALSE, digits = 3)`, which is greater than $\alpha$.
+=======
+Here we fail to reject the Null Hypothesis $H_0$. We do not have enough evidence that the average income of defaulted vs. non-defaulted customers is different. We fail to reject th enull hypothesis with a p-value of `r format(ttest2sample_incomes$p.value, scientific=FALSE, digits = 3)`, which is greater than $\alpha$.  
+>>>>>>> main
+
+
+
+Now lets asses if years in current home is significantly different for those who have defaulted vs not defaulted. We set up our hypotheses for years in current home as follows:  
+
+$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$  
+
+
+
+<<<<<<< HEAD
+As per usual, we will use $\alpha$ = 0.05.
+
+```{r}
+=======
+As per usual, we will use $\alpha$ = 0.05.  
+
+
+```{r, results='show'}
+>>>>>>> main
+ttest2sample_currentHome = t.test(defaulted$CURRENT_HOUSE_YRS, not_defaulted$CURRENT_HOUSE_YRS, alternative = 'less')
+#Output results
+ttest2sample_currentHome
+```
+
+<<<<<<< HEAD
+=======
+  
+  
+>>>>>>> main
+With a p-value of `r format(ttest2sample_currentHome$p.value, scientific=FALSE, digits = 3)`, which is less than $\alpha$, we can reject the Null Hypothesis $H_0$ in favor of the alternative hypothesis $H_1$. Therefore, at the $\alpha$ = 0.05 level, we can say that the average number of years in the current house for someone who has defaulted is significantly less than for someone who did not default.
+
+Now we'll examine overall job experience and if it differs between the two loan statuses. We set up our hypotheses for overall job experience as follows:  
+
+$H_0$: $\mu_{defaulted} = \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$  
+
+
+<<<<<<< HEAD
+As per usual, we will use $\alpha$ = 0.05.
+
+```{r}
+=======
+As per usual, we will use $\alpha$ = 0.05.  
+
+
+```{r, results='show'}
+>>>>>>> main
+ttest2sample_experience <- t.test(defaulted$Experience, not_defaulted$Experience, alternative = "two.sided")
+#Output results
+ttest2sample_experience
+```
+
+Based on our t-test, we again reject the null hypothesis with a p-value of `r format(ttest2sample_experience$p.value, scientific=TRUE, digits = 3)` in favor of the alternative hypothesis $H_1$. Therefore, we can say that at an $\alpha$ = 0.05 level, the years of experience for someone who has defaulted differs significantly from the years of experience for someone who has not-defaulted.
+
+
+We know overall job experience and years in current job are highly correlated, but it is still worth examining them separately even if we it is likely we'll see the same result. Our hypotheses for years in current job are as follows:  
+
+$H_0$: $\mu_{defaulted} = \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} \neq \mu_{not defaulted}$  
+
+
+<<<<<<< HEAD
+As per usual, we will use $\alpha$ = 0.05.
+
+```{r}
+=======
+As per usual, we will use $\alpha$ = 0.05.  
+
+```{r, results='show'}
+>>>>>>> main
+ttest2sample_currentjob <- t.test(defaulted$CURRENT_JOB_YRS, not_defaulted$CURRENT_JOB_YRS)
+ttest2sample_currentjob
+```
+
+Our test again shows our p-value of `r format(ttest2sample_currentjob$p.value, scientific=TRUE, digits = 3)` is less than our $\alpha$, so we can reject the null hypothesis in favor of the alternative hypothesis. Therefore, at the $\alpha$ = 0.05 level, we can say that years in current job differs significantly between those who have defaulted and those who haven't.
+
+
+Lastly, we'll examine age and if customers who default on loans are significantly younger than those who do not. We'll set up our age hypotheses as follows:  
+
+
+$H_0$: $\mu_{defaulted} \geq \mu_{not defaulted}$  
+
+$H_1$: $\mu_{defaulted} < \mu_{not defaulted}$  
+
+
+As per usual, we will use $\alpha$ = 0.05.
+
+<<<<<<< HEAD
+```{r}
+=======
+```{r, results='show'}
+>>>>>>> main
+ttest2sample_age <- t.test(defaulted$Age, not_defaulted$Age, alternative = 'less')
+ttest2sample_age
+```
+
+With our p-value of `r format(ttest2sample_age$p.value, scientific=TRUE, digits = 3)`, which is less than our $\alpha$=0.05,  we can reject the null hypothesis in favor of the alternative. Therefore, the average age of those who have defaulted is statistically significantly lower than the average age of those who have not defaulted.
+
+
+Now that we've completed our analyses, we can return to our initial questions to see what we've discovered. First, we discovered that we don't have enough evidence to state that customers who defaulted have lower incomes than those who don't. Second, we learned that rates of default is dependent with home-ownership status. Then we confirmed that marital status is also dependent with laon default status. Although we can't confirm if an additional year of home-ownership reduces the likelihood of default, we can say that years of home-ownership differs significantly between those who have defaulted and those who haven't. We also saw a similar result with overall job experience and years of experience in the current job. Finally, we saw that customers who have defaulted are in fact statistically significantly younger than those who have not.
