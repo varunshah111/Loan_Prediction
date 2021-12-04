@@ -106,7 +106,8 @@ Full Model:
 
 #defLogit <- glm(Risk_Flag ~ Income +Age +Experience+Married.Single+House_Ownership+Car_Ownership+CURRENT_JOB_YRS+CURRENT_HOUSE_YRS , data = loandata, family = "binomial")
 
-defLogit <- glm(Risk_Flag ~ ., data = over, family = "binomial")
+# defLogit <- glm(Risk_Flag ~ ., data = over, family = "binomial")
+defLogit <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
 
 summary(defLogit)
 
@@ -125,11 +126,70 @@ summary(fwd)
 xkabledply(fwd, title = paste("Logistic Regression :", format(formula(fwd)) ))
 ```
 
+```{r}
+# Specify a null model with no predictors
+null_model <- glm(Risk_Flag ~ 1, data = loandata, family = "binomial")
 
+# Specify the full model using all of the potential predictors
+full_model <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
 
+# Use a forward stepwise algorithm to build a parsimonious model(
+bkwrd_step_model <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(loandata)))
+```
+
+--------------------------------------------------------------------------------------------------
 
 Backward selection on AIC:
 
+
+```{r}
+# Specify a null model with no predictors
+null_model <- glm(Risk_Flag ~ 1, data = loandata, family = "binomial")
+
+# Specify the full model using all of the potential predictors
+full_model <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
+
+# Use a backward stepwise algorithm on AIC to build a parsimonious model
+bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=2)
+```
+
+If we consider AIC as a criterion we should have all the 8 variables in the logistics model.
+
+Now let's the the VIF score to find out the multicolinearity.
+```{r}
+# library(car)
+# xkablevif(full_model, wide=FALSE)
+vif(full_model)
+```
+
+
+Backward selection on BIC:
+
+```{r}
+# Use a backward stepwise algorithm on BIC to build a parsimonious model
+bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(loandata)))
+```
+
+From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. Now let's make a model with these 6 features.
+
+
+```{r}
+
+bkwd_bic_model <- glm(Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = loandata, family = "binomial")
+summary(bkwd_bic_model)
+
+```
+
+Now let's the the VIF score to find out the multicolinearity.
+```{r}
+# library(car)
+# xkablevif(bkwd_bic_model, wide=FALSE)
+vif(bkwd_bic_model)
+```
+
+All the VIF scores are satisfactory. It means we don't have multicolinearity in this model.
+
+---------------------------------------------------------------------------------------------------
 ```{r}
 #library(MASS)
 #AIC
