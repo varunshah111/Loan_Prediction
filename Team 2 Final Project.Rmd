@@ -324,7 +324,7 @@ confusionMatrix(as.factor(ifelse(loandata$prob >0.15,0,1)), as.factor(loandata$R
 ```{r}
 library(caTools)
 
-loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+loandata$Risk_Flag <- as.factor(loandata$Risk_Flag) # this only for randomforest
 
 
 split <- sample.split(loandata, SplitRatio = 0.75)
@@ -356,9 +356,16 @@ xkabledply( cm, title = "Confusion matrix from Random Forest" )
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
 
-#plot(rf)
+#plot the error rate for defaulted / no defaulted 
+oob.error.data <- data.frame(
+  Trees=rep(1:nrow(rf$err.rate), times=3),
+  Type=rep(c("OOB", "0", "1"), each=nrow(rf$err.rate)),
+  Error=c(rf$err.rate[,"OOB"], 
+    rf$err.rate[,"0"], 
+    rf$err.rate[,"1"]))
 
-
+ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
+  geom_line(aes(color=Type))
 
 ```
 
