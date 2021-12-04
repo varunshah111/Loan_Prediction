@@ -182,6 +182,11 @@ ADDITIONAL ANALYSIS OF THIS MODEL INCLUDING ROC-AUC, PSEUDO-R^2, CONFUSION MATRI
 
 Now that we've developed a model manually that's significant, let's see what happens if we use algorithms to build a good model.
 
+
+
+
+
+
 # Backwards Selection
 
 
@@ -198,6 +203,8 @@ full_model <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
 # Use a backward stepwise algorithm on AIC to build a parsimonious model
 bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=2)
 ```
+
+
 
 If we consider AIC as a criterion we should have all the 8 variables in the logistics model.
 
@@ -242,7 +249,7 @@ Now let's the the VIF score to find out the multicolinearity.
 ```{r}
 # library(car)
 # xkablevif(bkwd_bic_model, wide=FALSE)
-vif(bkwd_bic_model)
+vif(bkwd_bic_model) 
 ```
 
 All the VIF scores are satisfactory. It means we don't have multicolinearity in this model.
@@ -263,7 +270,102 @@ accuracy2 = (cmbic[1] +cmbic[5]) / cmbic[9]
 
 # Forward Selection
 
+
+
+```{r}
+
+foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC 
+
+```
+
+According to the AIC Foward selection method we should have all the 8 variables in the logistics model.
+
+
+Forward selection on BIC:
+
+```{r}
+fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(loandata))) #k = log(n) is sometimes referred to as BIC or SBC.
+```
+
+From forward selection with BIC as criteria we are getting 8 features also. 
+
+# ROC- AUC
+
+```{r}
+loadPkg('pROC')
+prob = predict(full_model,type = 'response') ## foward selection results = full_model 
+loandata$prob = prob
+h <- roc(Risk_Flag ~ prob, data = loandata)
+auc(h)
+plot(h)
+
+```
+
+#Confusion matrix:
+
+
+```{r}
+library(caret)
+confusionMatrix(as.factor(ifelse(loandata$prob >0.15,0,1)), as.factor(loandata$Risk_Flag))
+
+```
+
+
+
 # Exhaustive Selection
+
+
+
+
+
+
+# Splitting the dataset
+
+```{r}
+library(caTools)
+
+loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+
+
+split <- sample.split(loandata, SplitRatio = 0.75)
+split
+   
+train_reg <- subset(loandata, split == "TRUE")
+test_reg <- subset(loandata, split == "FALSE")
+
+```
+
+
+# Random Forest 
+
+
+Model
+
+```{r}
+#install.packages("randomForest")
+library(randomForest)
+
+
+rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
+# predicting in test set
+predict_test <- predict(rf, test_reg, type = 'response')
+#confusion matrix  
+cm <- table(test_reg$Risk_Flag, predict_test)
+xkabledply( cm, title = "Confusion matrix from Random Forest" )
+# Accuracy
+missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
+print(paste('Random Forest Accuracy =', 1 - missing_classerr))
+
+#plot(rf)
+
+
+
+```
+
+
+
+
+
 
 #"Best" Model Comparisons
 
@@ -278,7 +380,8 @@ summary(house_job_exp_age_limit_marital_income_car)
 
 The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
 
-The final model for forward selection was: 
+The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + 
+    Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS"**
 
 The final model for exhaustive selection was: 
 
