@@ -1,13 +1,13 @@
 {
     "sortOrder": [
         {
-            "columnIndex": 4,
-            "ascending": false
-        },
-        {
             "columnIndex": 2,
             "ascending": true
+        },
+        {
+            "columnIndex": 4,
+            "ascending": false
         }
     ],
-    "path": "~/GitHub/Team_2_America"
+    "path": "~/GitHub/6101_21FA_IntroDS/Mod5/Class08_Logit"
 }
