@@ -177,12 +177,89 @@ summary(house_job_exp_age_limit_marital_income_car)
 
 When we add in car ownership, we see that income becomes insignificant, while everything else remains significant. This means that knowing an individuals income or car ownership status is significant, but not both when we already know this other information. If we examine our AIC values, we see that when our model uses income, we have an AIC of `r house_job_exp_age_limit_marital_income$aic`, while our model that uses car ownership has an AIC of `r house_job_exp_age_limit_marital_income_car$aic`. Therefore, if we use AIC as our criteria of "goodness", then our model using car ownership is the better model.
 
-ADDITIONAL ANALYSIS OF THIS MODEL INCLUDING ROC-AUC, PSEUDO-R^2, CONFUSION MATRIC, ETC.
+ADDITIONAL ANALYSIS OF THIS MODEL INCLUDING ROC-AUC, PSEUDO-R^2, CONFUSION MATRIX, ETC.
 
 
 Now that we've developed a model manually that's significant, let's see what happens if we use algorithms to build a good model.
 
 # Backwards Selection
+
+
+Backward selection on AIC:
+
+
+```{r}
+# Specify a null model with no predictors
+null_model <- glm(Risk_Flag ~ 1, data = loandata, family = "binomial")
+
+# Specify the full model using all of the potential predictors
+full_model <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
+
+# Use a backward stepwise algorithm on AIC to build a parsimonious model
+bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=2)
+```
+
+If we consider AIC as a criterion we should have all the 8 variables in the logistics model.
+
+Now let's the the VIF score to find out the multicolinearity.
+```{r}
+# library(car)
+# xkablevif(full_model, wide=FALSE)
+vif(full_model)
+```
+
+Confusion matrix:
+
+```{r}
+loadPkg("regclass")
+cmaic <- confusion_matrix(full_model)
+xkabledply( cmaic, title = "Confusion matrix from Logit Model on AIC" )
+accuracy1 = (cmaic[1] +cmaic[5]) / cmaic[9]
+unloadPkg("regclass")
+```
+
+<!-- Accuracy of the backward AIC model is `r round(accuracy1 * 100) ` % -->
+
+
+Backward selection on BIC:
+
+```{r}
+# Use a backward stepwise algorithm on BIC to build a parsimonious model
+bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(loandata)))
+```
+
+From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. Now let's make a model with these 6 features.
+
+
+```{r}
+
+bkwd_bic_model <- glm(Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = loandata, family = "binomial")
+summary(bkwd_bic_model)
+
+```
+
+Now let's the the VIF score to find out the multicolinearity.
+```{r}
+# library(car)
+# xkablevif(bkwd_bic_model, wide=FALSE)
+vif(bkwd_bic_model)
+```
+
+All the VIF scores are satisfactory. It means we don't have multicolinearity in this model.
+
+Confusion Matrix:
+
+```{r}
+loadPkg("regclass")
+cmbic <- confusion_matrix(bkwd_bic_model)
+xkabledply( cmbic, title = "Confusion matrix from Logit Model on BIC" )
+unloadPkg("regclass")
+accuracy2 = (cmbic[1] +cmbic[5]) / cmbic[9]
+```
+
+<!-- Accuracy of the backward BIC model is `r round(accuracy2 * 100) ` % -->
+
+
 
 # Forward Selection
 
@@ -199,7 +276,7 @@ house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House
 summary(house_job_exp_age_limit_marital_income_car)
 ```
 
-The final model for backwards selection was: 
+The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
 
 The final model for forward selection was: 
 
