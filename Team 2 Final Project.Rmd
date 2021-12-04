@@ -189,16 +189,31 @@ Now that we've developed a model manually that's significant, let's see what hap
 
 # Backwards Selection
 
-
 Backward selection on AIC:
+
+### Splitting the dataset to Train 75% & Test 25%
+
+```{r}
+library(caTools)
+
+loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+
+
+split <- sample.split(loandata, SplitRatio = 0.75)
+split
+   
+train_reg <- subset(loandata, split == "TRUE")
+test_reg <- subset(loandata, split == "FALSE")
+
+```
 
 
 ```{r}
 # Specify a null model with no predictors
-null_model <- glm(Risk_Flag ~ 1, data = loandata, family = "binomial")
+null_model <- glm(Risk_Flag ~ 1, data = train_reg, family = "binomial")
 
 # Specify the full model using all of the potential predictors
-full_model <- glm(Risk_Flag ~ ., data = loandata, family = "binomial")
+full_model <- glm(Risk_Flag ~ ., data = train_reg, family = "binomial")
 
 # Use a backward stepwise algorithm on AIC to build a parsimonious model
 bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=2)
@@ -215,24 +230,22 @@ Now let's the the VIF score to find out the multicolinearity.
 vif(full_model)
 ```
 
-Confusion matrix:
+<!-- Confusion matrix: -->
 
 ```{r}
-loadPkg("regclass")
-cmaic <- confusion_matrix(full_model)
-xkabledply( cmaic, title = "Confusion matrix from Logit Model on AIC" )
-accuracy1 = (cmaic[1] +cmaic[5]) / cmaic[9]
-unloadPkg("regclass")
+# loadPkg("regclass")
+# cmaic <- confusion_matrix(full_model)
+# xkabledply( cmaic, title = "Confusion matrix from Logit Model on AIC" )
+# accuracy1 = (cmaic[1] +cmaic[5]) / cmaic[9]
+# unloadPkg("regclass")
 ```
-
-<!-- Accuracy of the backward AIC model is `r round(accuracy1 * 100) ` % -->
 
 
 Backward selection on BIC:
 
 ```{r}
 # Use a backward stepwise algorithm on BIC to build a parsimonious model
-bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(loandata)))
+bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(train_reg)))
 ```
 
 From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. Now let's make a model with these 6 features.
@@ -240,7 +253,7 @@ From backward selection with BIC as criteria we are getting 6 features. It exclu
 
 ```{r}
 
-bkwd_bic_model <- glm(Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = loandata, family = "binomial")
+bkwd_bic_model <- glm(Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
 summary(bkwd_bic_model)
 
 ```
@@ -252,19 +265,39 @@ Now let's the the VIF score to find out the multicolinearity.
 vif(bkwd_bic_model) 
 ```
 
-All the VIF scores are satisfactory. It means we don't have multicolinearity in this model.
 
-Confusion Matrix:
+
+## ROC- AUC - Backward Selection Model
 
 ```{r}
-loadPkg("regclass")
-cmbic <- confusion_matrix(bkwd_bic_model)
-xkabledply( cmbic, title = "Confusion matrix from Logit Model on BIC" )
-unloadPkg("regclass")
-accuracy2 = (cmbic[1] +cmbic[5]) / cmbic[9]
+loadPkg('pROC')
+# prob1 = predict(bkwd_bic_model,type = 'response') ## foward selection results = bkwd_bic_model_model 
+# train_reg$prob1 = prob1
+# h <- roc(Risk_Flag ~ prob1, data = train_reg)
+# auc(h)
+# plot(h)
+
+prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
+
+test_reg$prob_bic <- ifelse(prob_predictbic > 0.15,1,0)
+
+h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
+auc(h)
+plot(h)
+
+# comparing the ratio
+table(test_reg$prob_bic)
+table(test_reg$Risk_Flag)
 ```
 
-<!-- Accuracy of the backward BIC model is `r round(accuracy2 * 100) ` % -->
+## Confusion matrix:
+
+
+```{r, results='markup'}
+library(caret)
+bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+xkabledply(bkwd_cm$table)
+```
 
 
 
@@ -278,35 +311,54 @@ foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to
 
 ```
 
-According to the AIC Foward selection method we should have all the 8 variables in the logistics model.
+According to the AIC Forward selection method we should have all the 8 variables in the logistics model.
 
 
 Forward selection on BIC:
 
 ```{r}
-fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(loandata))) #k = log(n) is sometimes referred to as BIC or SBC.
+fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
 ```
 
 From forward selection with BIC as criteria we are getting 8 features also. 
 
-# ROC- AUC
+## ROC- AUC - Forward selection model
 
 ```{r}
-loadPkg('pROC')
-prob = predict(full_model,type = 'response') ## foward selection results = full_model 
-loandata$prob = prob
-h <- roc(Risk_Flag ~ prob, data = loandata)
-auc(h)
-plot(h)
+# loadPkg('pROC')
+# prob = predict(full_model,type = 'response') ## foward selection results = full_model 
+# loandata$prob = prob
+# h <- roc(Risk_Flag ~ prob, data = loandata)
+# auc(h)
+# plot(h)
 
 ```
 
-#Confusion matrix:
-
 
 ```{r}
+prob_predictaic <- predict(full_model, test_reg, type='response')
+
+test_reg$prob_aic <- ifelse(prob_predictaic > 0.15,1,0)
+
+h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(h)
+plot(h)
+
+# comparing the ratio
+table(test_reg$prob_aic)
+table(test_reg$Risk_Flag)
+```
+
+## Confusion matrix:
+
+
+```{r, results='markup'}
+# library(caret)
+# confusionMatrix(as.factor(ifelse(loandata$prob >0.15,0,1)), as.factor(loandata$Risk_Flag))
+
 library(caret)
-confusionMatrix(as.factor(ifelse(loandata$prob >0.15,0,1)), as.factor(loandata$Risk_Flag))
+fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+xkabledply(fwd_cm$table)
 
 ```
 
@@ -319,19 +371,19 @@ confusionMatrix(as.factor(ifelse(loandata$prob >0.15,0,1)), as.factor(loandata$R
 
 
 
-# Splitting the dataset
+<!-- # Splitting the dataset -->
 
 ```{r}
-library(caTools)
-
-loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
-
-
-split <- sample.split(loandata, SplitRatio = 0.75)
-split
-   
-train_reg <- subset(loandata, split == "TRUE")
-test_reg <- subset(loandata, split == "FALSE")
+# library(caTools)
+# 
+# loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+# 
+# 
+# split <- sample.split(loandata, SplitRatio = 0.75)
+# split
+#    
+# train_reg <- subset(loandata, split == "TRUE")
+# test_reg <- subset(loandata, split == "FALSE")
 
 ```
 
