@@ -279,11 +279,11 @@ loadPkg('pROC')
 
 prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
 
-test_reg$prob_bic <- ifelse(prob_predictbic > 0.15,1,0)
+test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
 
-h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
-auc(h)
-plot(h)
+bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
+auc(bkwd_h)
+plot(bkwd_h)
 
 # comparing the ratio
 table(test_reg$prob_bic)
@@ -297,6 +297,8 @@ table(test_reg$Risk_Flag)
 library(caret)
 bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
 xkabledply(bkwd_cm$table)
+
+bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
 ```
 
 
@@ -326,11 +328,10 @@ From forward selection with BIC as criteria we are getting 8 features also.
 
 ```{r}
 # loadPkg('pROC')
-# prob = predict(full_model,type = 'response') ## foward selection results = full_model 
-# loandata$prob = prob
-# h <- roc(Risk_Flag ~ prob, data = loandata)
-# auc(h)
-# plot(h)
+#prob = predict(full_model,type = 'response') ## foward selection results = full_model #loandata$prob = prob
+#h <- roc(Risk_Flag ~ prob, data = loandata)
+# auc(fwd_h)
+# plot(fwd_h)
 
 ```
 
@@ -338,11 +339,11 @@ From forward selection with BIC as criteria we are getting 8 features also.
 ```{r}
 prob_predictaic <- predict(full_model, test_reg, type='response')
 
-test_reg$prob_aic <- ifelse(prob_predictaic > 0.15,1,0)
+test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
 
-h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
-auc(h)
-plot(h)
+fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(fwd_h)
+plot(fwd_h)
 
 # comparing the ratio
 table(test_reg$prob_aic)
@@ -360,6 +361,7 @@ library(caret)
 fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
 xkabledply(fwd_cm$table)
 
+fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
 ```
 
 
@@ -405,9 +407,7 @@ acc_dt <-  sum(diag(cmdt)) / sum(cmdt)
 print(paste('Decision Tree Accuracy =', acc_dt))
 
 
-
 # plot(dt)
-
 ```
 
 As making the decision tree with default conditions couldn't predict properly, we are making another tree by tuning the accuracy and controlling the tree parameters.
@@ -430,6 +430,7 @@ control <- rpart.control(minsplit = 3,
 tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
 accuracy_tune(tune_fit)
 
+
 #confusion matrix  
 predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
 cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
@@ -439,6 +440,14 @@ xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
 ```{r, results='hide'}
 plot(tune_fit)
 # text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
+
+#ROC-AUC Calculation for Decision Tree
+pred <- predict(tune_fit, newdata=test_reg)
+test_reg$prob_dt <- ifelse(pred[,1] > 0.855,0,1)
+
+dt_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(dt_h)
+plot(dt_h)
 ```
 ```{r}
 # library(caret)
@@ -461,16 +470,18 @@ rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
 # predicting in test set
 predict_test <- predict(rf, test_reg, type = 'response')
 #confusion matrix  
-cm <- table(test_reg$Risk_Flag, predict_test)
-xkabledply( cm, title = "Confusion matrix from Random Forest" )
+rf_cm <- table(test_reg$Risk_Flag, predict_test)
+xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
 # Accuracy
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
 
 plot(rf)
 
-
-
+test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
+rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
+auc(rf_h)
+plot(rf_h)
 ```
 
 
@@ -478,27 +489,30 @@ plot(rf)
 
 #"Best" Model Comparisons
 
-Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We'll start with an analysis of our model diagnostics between each model before running each model against our test dataset to confirm we aren't seeing over fitting.
+Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We used the training data to develop our models, so we'll now run each training model against our test dataset. We'll analyze the ROC_AUC and accuracy for each model, given that we already know each should produce low error as judged by AIC/BIC in our initial regression builds.
 
 The final model for manual logistic regression was: 
 **"Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single"**
 
-In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of 0.518 and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
+In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(manual_cm)` and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
 The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
 
+In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(bkwd_h)` and correctly predicted `r bkwd_cm$table[4:4]` defaulted accounts and `r bkwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r bkwd_accuracy` or `r bkwd_accuracy*100`%.
+
 The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS"**
+
+In developing this model with a 0.115 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(fwd_h)` and correctly predicted `r fwd_cm$table[4:4]` defaulted accounts and `r fwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r fwd_accuracy` or `r fwd_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
 The final model for exhaustive selection was: 
 
 
 
+Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
-## Using our Test Dataset
-### Comparison of Confusion Matrix (is this a confusion matrix or is this called something else)
+In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a cutoff of 0.145 and correctly predicted `r cmdtt$table[4:4]` defaulted accounts and `r cmdtt$table[1:1]` non-defaulted accounts for a total accuracy of `r accuracy_tune(tune_fit)` or `r accuracy_tune(tune_fit)*100`%. Importantly, this is our first model to obtain an ROC-AUC above our desired 0.8 threshold, so this is a useful model.
 
-
-
-
+Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(rf_h)` and correctly predicted `r rf_cm$table[4:4]` defaulted accounts and `r rf_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r missing_classerr` or `r missing_classerr*100`%. This model once again dips below our desired AUC-ROC threshold, so is not a useful model.
 
 # Conclusion and answers to questions plus overview of our final model in terms of expected likelihood changes for differences in our variables
+
