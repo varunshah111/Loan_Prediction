@@ -19,16 +19,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r init, include=FALSE}
-# some of common options (and the defaults) are:
-# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right',
+# some of common options (and the defaults) are: 
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
 library(ezids)
 library(dplyr)
 library(lmtest)
 library(vcd)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
-options(scientific=T, digits = 3)
-# options(scipen=9, digits = 3)
+options(scientific=T, digits = 3) 
+# options(scipen=9, digits = 3) 
 # use scipen=999 to prevent scientific notation at all times
 ```
 
@@ -71,7 +71,7 @@ Once again, we've developed some questions to help guide us in the model develop
 	• What are the most significant predictors for default, and do they appear across all of the "best" models?
 	• Using a confusion matrix, which of our "best" models appears to perform best across the different metrics we care about (precision, recall-rate, etc.)
 	• How do the different models fare when used on the test dataset? 	
-
+	
 To begin with, let's go ahead and use the knowledge we learned through EDA to develop some logistic regression models manually. This will allow us to then guage how good our "best" models are against what we think should be a good model.
 
 # Preliminary Model Development
@@ -177,13 +177,30 @@ summary(house_job_exp_age_limit_marital_income_car)
 
 When we add in car ownership, we see that income becomes insignificant, while everything else remains significant. This means that knowing an individuals income or car ownership status is significant, but not both when we already know this other information. If we examine our AIC values, we see that when our model uses income, we have an AIC of `r house_job_exp_age_limit_marital_income$aic`, while our model that uses car ownership has an AIC of `r house_job_exp_age_limit_marital_income_car$aic`. Therefore, if we use AIC as our criteria of "goodness", then our model using car ownership is the better model.
 
-ADDITIONAL ANALYSIS OF THIS MODEL INCLUDING ROC-AUC, PSEUDO-R^2, CONFUSION MATRIX, ETC.
+Now that we've determined this is our "best" model using manual regression techniques, let's do some analysis about how good this model actually is.
+
+```{r}
+library('pROC')
+prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, loandata, type='response')
+loandata$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
+sum(loandata$prob_manual==1)
+sum(loandata$Risk_Flag==1)
+h_manual <- roc(Risk_Flag ~ prob_manual, data = loandata)
+auc(h_manual)
+plot(h_manual)
+```
+
+If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the right accounts as those who will default.
+
+```{r}
+library(caret)
+manual_cm <- confusionMatrix(as.factor(loandata$prob_manual), as.factor(loandata$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+xkabledply(manual_cm$table)
+manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
+```
 
 
-Now that we've developed a model manually that's significant, let's see what happens if we use algorithms to build a good model.
-
-
-
+Now that we've developed a model manually that's statistically significant, but practically useless, let's see what happens if we use algorithms to try and build a good model.
 
 ### Splitting the dataset to Train 75% & Test 25%
 
@@ -195,7 +212,7 @@ loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 
 split <- sample.split(loandata, SplitRatio = 0.75)
 # split
-
+   
 train_reg <- subset(loandata, split == "TRUE")
 test_reg <- subset(loandata, split == "FALSE")
 
@@ -230,7 +247,7 @@ Backward selection on BIC:
 bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(train_reg)))
 ```
 
-From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS.
+From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. 
 As BIC is giving us less features we can consider this as the final model with backward elimination. Now let's make a model with these 6 features.
 
 
@@ -245,7 +262,7 @@ summary(bkwd_bic_model)
 ```{r}
 # library(car)
 # xkablevif(bkwd_bic_model, wide=FALSE)
-# vif(bkwd_bic_model)
+# vif(bkwd_bic_model) 
 ```
 
 
@@ -254,7 +271,7 @@ summary(bkwd_bic_model)
 
 ```{r}
 loadPkg('pROC')
-# prob1 = predict(bkwd_bic_model,type = 'response') ## foward selection results = bkwd_bic_model_model
+# prob1 = predict(bkwd_bic_model,type = 'response') ## foward selection results = bkwd_bic_model_model 
 # train_reg$prob1 = prob1
 # h <- roc(Risk_Flag ~ prob1, data = train_reg)
 # auc(h)
@@ -290,7 +307,7 @@ xkabledply(bkwd_cm$table)
 
 ```{r}
 
-foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC
+foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC 
 
 ```
 
@@ -303,13 +320,13 @@ Forward selection on BIC:
 fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
 ```
 
-From forward selection with BIC as criteria we are getting 8 features also.
+From forward selection with BIC as criteria we are getting 8 features also. 
 
 ## ROC- AUC - Forward selection model
 
 ```{r}
 # loadPkg('pROC')
-# prob = predict(full_model,type = 'response') ## foward selection results = full_model
+# prob = predict(full_model,type = 'response') ## foward selection results = full_model 
 # loandata$prob = prob
 # h <- roc(Risk_Flag ~ prob, data = loandata)
 # auc(h)
@@ -358,10 +375,10 @@ xkabledply(fwd_cm$table)
 
 ```{r}
 # library(caTools)
-#
+# 
 # loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
-#
-#
+# 
+# 
 # split <- sample.split(loandata, SplitRatio = 0.75)
 # split
 #    
@@ -370,7 +387,7 @@ xkabledply(fwd_cm$table)
 
 ```
 
-# Decision Tree
+# Decision Tree 
 Model
 
 ```{r, results='markup'}
@@ -430,7 +447,7 @@ plot(tune_fit)
 
 Now the accuracy has increased and the model can predict defaulted cases as well, even though the precision isn't that satisfactory.
 
-# Random Forest
+# Random Forest 
 
 
 Model
@@ -450,16 +467,9 @@ xkabledply( cm, title = "Confusion matrix from Random Forest" )
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
 
-#plot the error rate for defaulted / no defaulted
-oob.error.data <- data.frame(
-  Trees=rep(1:nrow(rf$err.rate), times=3),
-  Type=rep(c("OOB", "0", "1"), each=nrow(rf$err.rate)),
-  Error=c(rf$err.rate[,"OOB"],
-    rf$err.rate[,"0"],
-    rf$err.rate[,"1"]))
+plot(rf)
 
-ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
-  geom_line(aes(color=Type))
+
 
 ```
 
@@ -470,28 +480,19 @@ ggplot(data=oob.error.data, aes(x=Trees, y=Error)) +
 
 Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We'll start with an analysis of our model diagnostics between each model before running each model against our test dataset to confirm we aren't seeing over fitting.
 
-The final model for manual logistic regression was:
-(This will be deleted, but just for model name reference for comparison coding)
-```{r}
-house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = loandata, family = 'binomial')
-summary(house_job_exp_age_limit_marital_income_car)
-```
+The final model for manual logistic regression was: 
+**"Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single"**
+
+In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of 0.518 and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
 The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
 
 The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS"**
 
-The final model for exhaustive selection was:
+The final model for exhaustive selection was: 
 
 
 
-### Comparison of AIC
-
-### Comparison of BIC
-
-### Comparison of Pseudo-R-Squared
-
-### Comparison of ROC-AUC
 
 ## Using our Test Dataset
 ### Comparison of Confusion Matrix (is this a confusion matrix or is this called something else)
