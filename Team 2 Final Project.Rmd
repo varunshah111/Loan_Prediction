@@ -76,7 +76,7 @@ Before we get into any of the analysis, let's create a training dataset and a te
 
 loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 
-
+set.seed(123)
 split <- sample.split(loandata, SplitRatio = 0.75)
 # split
    
@@ -251,7 +251,7 @@ Now that we've developed a model manually that's statistically significant, but 
 
 # Backwards Selection
 
-Backward selection on AIC:
+## Backward selection on AIC:
 
 
 ```{r}
@@ -271,7 +271,7 @@ If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS from the logis
 
 
 
-Backward selection on BIC:
+## Backward selection on BIC:
 
 ```{r}
 # Use a backward stepwise algorithm on BIC to build a parsimonious model
@@ -298,7 +298,7 @@ summary(bkwd_bic_model)
 
 
 
-## ROC- AUC - Backward Selection Model
+### ROC- AUC - Backward Selection Model
 
 ```{r}
 # prob1 = predict(bkwd_bic_model,type = 'response') ## foward selection results = bkwd_bic_model_model 
@@ -320,11 +320,11 @@ table(test_reg$prob_bic)
 table(test_reg$Risk_Flag)
 ```
 
-## Confusion matrix:
+### Confusion matrix:
 
 
 ```{r, results='markup'}
-library(caret)
+
 bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
 xkabledply(bkwd_cm$table)
 
@@ -346,7 +346,7 @@ foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to
 According to the AIC Forward selection method, we should have all the 8 variables in the logistics model.
 
 
-Forward selection on BIC:
+## Forward selection on BIC:
 
 ```{r}
 fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
@@ -354,7 +354,7 @@ fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg)))
 
 From forward selection with BIC as criteria we are getting 8 features also. 
 
-## ROC- AUC - Forward selection model
+### ROC- AUC - Forward selection model
 
 
 ```{r}
@@ -371,7 +371,7 @@ table(test_reg$prob_aic)
 table(test_reg$Risk_Flag)
 ```
 
-## Confusion matrix:
+### Confusion matrix:
 
 
 ```{r, results='markup'}
@@ -408,10 +408,8 @@ summary(riskexhaust_aic$BestModels)
 
 The above shows the top 5 Best Models. The top model has the AIC of 124973, where it includes all the variables.
 
-`CURRENT_HOUSE_YRS`, and second does not include `Income` either.
 
-We will run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`.
-
+We now run the model with all features included:
 
 ```{r}
 riskaic <- glm(Risk_Flag ~ Income + 
@@ -427,7 +425,7 @@ summary(riskaic)
 ```
 As we can see above, the p-value for `Income` is slightly over  $\alpha$=0.05 making it insignificant. All the other coefficients have statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
 
-We run another model removing `Income` as it is statistically insignificant.
+We run another model removing `Income` as it shows statistically insignificant.
 
 ```{r}
 riskaic <- glm(Risk_Flag ~ Age + 
@@ -440,7 +438,7 @@ riskaic <- glm(Risk_Flag ~ Age +
 
 summary(riskaic)
 ```
-Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.  
+Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.    
 
 For every year increase in `Experience`, the log odds ratio of default reduces by 0.02.  
 
@@ -471,7 +469,11 @@ Now the accuracy has increased and the model can predict defaulted cases as well
 
 ### Confusion Matrix
 ```{r}
-confusion_matrix(riskexhaust_aic$BestModel)
+exh_aic_cm <- confusionMatrix(as.factor(riskexhaust_aic$BestModel), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+xkabledply(exh_aic_cm$table)
+
+exh_aic_accuracy <- (exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1])/(exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1]+exh_aic_cm$table[2:2]+exh_aic_cm$table[3:3])
+
 ```
 The confusion matrix above shows us the predicted value for Defaulted as 0 based on our training model. This could be because of the class being heavily unbalanced, which makes sense because the customers defaulting a loan is a very small percentage compared to the customers who do not default.
 
@@ -483,20 +485,17 @@ We will further check our model by running it on our test data. We will also cre
 #test_aic <- test[,2:7]
 #prob_predict <- predict(riskaic, type ='response', newdata = test_aic )
 
-prob_predict <- predict(riskaic, test_reg, type = 'response')
+prob_predict_aic <- predict(riskaic, test_reg, type = 'response')
 
-head(prob_predict)
 
-head(test_reg$Risk_Flag)
+test_reg$predictedRisk_aic <- ifelse(prob_predict_aic > 0.15, 1, 0) 
 
-test_reg$predictedRisk <- ifelse(prob_predict > 0.15, 1, 0) 
-head(test_reg)
 
 # Comparing the Risk v Predicted Risk ratio
-table(test_reg$predictedRisk) 
+table(test_reg$predictedRisk_aic) 
 table(test_reg$Risk_Flag)
 
-confusionMatrix(as.factor(test_reg$predictedRisk), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+confusionMatrix(as.factor(test_reg$predictedRisk_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
 The above Confusion Matrix shows us an Accuracy of 81% on the test set. Although a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 12%, and precision for them is only 15%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1277 accurately. It predicted 7201 customers who did not default as defaulted, and 8971 customers who actually defaulted as not defaulted.
 
@@ -520,7 +519,7 @@ Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC) measures
 ```{r}
  # receiver operating characteristic curve, gives the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The curve is on sensitivity/recall/true-positive-rate vs false_alarm/false-positive-rate/fall-out.
 
-h_exh_aic <- roc(Risk_Flag ~ prob_predict, data=test_reg)
+h_exh_aic <- roc(Risk_Flag ~ prob_predict_aic, data=test_reg)
 auc(h_exh_aic) # area-under-curve prefer 0.8 or higher.
 plot(h_exh_aic)
 ```
@@ -581,20 +580,16 @@ We have a similar result here, except we have removed the Current Years in Home 
 We will also check this model by running it on our test data (as we did earlier). 
 
 ```{r}
-prob_predict <- predict(riskbic, test_reg, type = 'response')
+prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
 
-head(prob_predict)
 
-head(test_reg$Risk_Flag)
-
-test_reg$predictedRisk <- ifelse(prob_predict > 0.15, 1, 0) 
-head(test_reg)
+test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0) 
 
 # Comparing the Risk v Predicted Risk ratio
 table(test_reg$predictedRisk) 
 table(test_reg$Risk_Flag)
 
-confusionMatrix(as.factor(test_reg$predictedRisk), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
 As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 80.5% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 12%, and precision to predict the risk is only 14.30%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1229 accurately. It predicted 7366 customers who did not default as defaulted, and 9019 customers who actually defaulted as not defaulted. 
 
@@ -617,7 +612,7 @@ The p-value is again well under 0.05, implying all the features as significant i
 ### ROC/AUC 
 
 ```{r}
-h_exh_bic <- roc(Risk_Flag ~ prob_predict, data=test_reg)
+h_exh_bic <- roc(Risk_Flag ~ prob_predict_bic, data=test_reg)
 auc(h_exh_bic) # area-under-curve prefer 0.8 or higher.
 plot(h_exh_bic)
 ```
@@ -749,9 +744,9 @@ The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experie
 
 In developing this model with a 0.115 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(fwd_h)` and correctly predicted `r fwd_cm$table[4:4]` defaulted accounts and `r fwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r fwd_accuracy` or `r fwd_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
-The final model for exhaustive selection was: 
+The final model for exhaustive selection (optimized for AIC) was: **"Risk_Flag ~ Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS"**
 
-
+In developing this model with a 0.15 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_aic)` and correctly predicted `r exh_aic_cm$table[4:4]` defaulted accounts and `r exh_aic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_aic_accuracy` or `r exh_aic_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
 Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
