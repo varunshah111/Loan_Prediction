@@ -349,8 +349,250 @@ xkabledply(fwd_cm$table)
 
 # Exhaustive Selection
 
+## Exhausting Selection - AIC
+
+We now look at Exhaustive Selection and check based on AIC and BIC criterion.
+
+```{r}
+loadPkg("bestglm")
+
+X <- subset(train_reg, select = c(1:8) )
+y <- subset(train_reg, select = c(9) )
+
+Xy<-as.data.frame(cbind(X,y))
+
+riskexhaust_aic <- bestglm(Xy = train_reg, family = binomial, 
+                       IC = "AIC",method = "exhaustive")     
+
+summary(riskexhaust_aic)
+riskexhaust_aic$BestModels
+summary(riskexhaust_aic$BestModels)
+
+```
+
+The above shows the top 5 Best Models. The top model has the AIC of 124973, where it includes all the variables.
+
+`CURRENT_HOUSE_YRS`, and second does not include `Income` either.
+
+We will run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`.
 
 
+```{r}
+riskaic <- glm(Risk_Flag ~ Income + 
+                 Age + 
+                 Experience + 
+                 Married.Single + 
+                 House_Ownership +
+                 Car_Ownership + 
+                 CURRENT_JOB_YRS +
+                 CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
+
+summary(riskaic)
+```
+As we can see above, the p-value for `Income` is slightly over the $\alpha$ making it insignificant. All the other coefficients are found statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
+
+We run another model removing `Income` as it is statistically insignificant.
+
+```{r}
+riskaic <- glm(Risk_Flag ~ Age + 
+                 Experience + 
+                 Married.Single + 
+                 House_Ownership +
+                 Car_Ownership + 
+                 CURRENT_JOB_YRS +
+                 CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
+
+summary(riskaic)
+```
+Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.  
+
+For every year increase in `Experience`, the log odds ratio of default reduces by 0.02.  
+
+Marital Status shows, for person being married vs single, the log odds of risk reduces by 0.23 when the person is married vs when they are single.
+
+The coefficients of Home Ownership show that a consumer owning a home reduces the log odds of a risk by 0.35, when compared with someone who is renting. The person who is neither renting or owning a home also reduces the log odds of risk by 0.32.
+
+Car ownership also reduces the log odds of a risk of default by 0.01.
+
+Another way to look at the above is by looking at the Odds-Ratio:  
+
+```{r}
+## odds ratios and 95% CI
+exp(cbind(OR = coef(riskaic), confint(riskaic)))
+```
+We can see above, with every increase in Age, the log odds ratio of a customer defaulting changes by 0.996 (which is the same as what we looked earlier), and we have similar results for other features.
+
+
+### Confusion Matrix
+```{r}
+loadPkg("regclass")
+confusion_matrix(riskbestglm$BestModel)
+unloadPkg("regclass")
+```
+The confusion matrix above shows us the predicted value for Defaulted as 0 based on our training model. This could be because of the class being heavily unbalanced, which makes sense because the customers defaulting a loan is a very small percentage compared to the customers who do not default.
+
+We will further check our model by running it on our test data. We will also create a separate column that shows the Predicted Risk based on our model.  
+
+```{r}
+table(test_reg$Risk_Flag)
+str(test_reg)
+#test_aic <- test[,2:7]
+#prob_predict <- predict(riskaic, type ='response', newdata = test_aic )
+
+prob_predict <- predict(riskaic, test_reg, type = 'response')
+
+head(prob_predict)
+
+head(test_reg$Risk_Flag)
+
+test_reg$predictedRisk <- ifelse(prob_predict > 0.15, 1, 0) 
+head(test_reg)
+
+# Comparing the Risk v Predicted Risk ratio
+table(test_reg$predictedRisk) 
+table(test_reg$Risk_Flag)
+
+library(caret)
+confusionMatrix(as.factor(test_reg$predictedRisk), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+```
+The above Confusion Matrix shows us an Accuracy of 81% on the test set. Althought a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 12%, and precision for them is only 15%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1277 accurately. It predicted 7201 customers who did not default as defaulted, and 8971 customers who actually defaulted as not defaulted.
+
+
+### Hoslem and Lemshow Test for AIC from exhaustive method
+
+The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic regression fit. 
+
+```{r}
+loadPkg("ResourceSelection") # function hoslem.test( ) for logit model evaluation
+riskaicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskaic)) # Hosmer and Lemeshow test, a chi-squared test
+unloadPkg("ResourceSelection") 
+
+riskaicHoslem
+```
+The p-value `r riskaicHoslem$p.value` is well under the $\alpha$ at 0.05, this indicates that the model is a good fit.   
+
+### Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC)
+
+Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC) measures the true positive rate (or sensitivity) against the false positive rate (or specificity). The area-under-curve is always between 0.5 and 1. Values higher than 0.8 is considered good model fit. 
+```{r}
+loadPkg("pROC") # receiver operating characteristic curve, gives the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The curve is on sensitivity/recall/true-positive-rate vs false_alarm/false-positive-rate/fall-out.
+
+h <- roc(Risk_Flag ~ prob_predict, data=test_reg)
+auc(h) # area-under-curve prefer 0.8 or higher.
+plot(h)
+```
+We have here the area-under-curve of `r auc(h)`, which is less than 0.8 indicating the model is not a good fit.  
+
+
+### McFadden
+McFadden is another evaluation tool we can use on logit regressions. This is part of what is called pseudo-R-squared values for evaluation tests. We can calculate the value directly from its definition if we so choose to.
+
+```{r McFadden_direct}
+RiskNullLogit <- glm(Risk_Flag ~ 1, data = train_reg, family = "binomial")
+mcFadden = 1 - logLik(riskaic)/logLik(RiskNullLogit)
+mcFadden
+
+
+```
+We now look at the BIC with exhaustive method.
+
+## Exhaustive - BIC
+
+
+```{r}
+str(Xy)
+
+
+riskbestglm_bic <- bestglm(Xy = train_reg, family = binomial, 
+                       IC = "BIC", method = "exhaustive") 
+
+summary(riskbestglm_bic)
+riskbestglm_bic$BestModels
+summary(riskbestglm_bic$BestModels)
+
+```
+Based on the above, we can see the Top 5 models. The top model has a BIC of 139651, which includes all the features except for `Income` and `CURRENT_HOUSE_YRS`
+
+ 
+### Confusion Matrix
+```{r}
+loadPkg("regclass")
+confusion_matrix(riskbestglm_bic$BestModel)
+unloadPkg("regclass")
+
+```
+
+We will now run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`. 
+
+```{r}
+riskbic <- glm(Risk_Flag ~ Age + 
+                 Experience + 
+                 Married.Single + 
+                 House_Ownership +
+                 Car_Ownership +
+                 CURRENT_JOB_YRS, data = train_reg, family = "binomial")
+
+summary(riskbic)
+```
+
+We have a similar result here, except we have removed the Current Years in Home variable.
+
+We will also check this model by running it on our test data (as we did earlier). 
+
+```{r}
+prob_predict <- predict(riskbic, test_reg, type = 'response')
+
+head(prob_predict)
+
+head(test_reg$Risk_Flag)
+
+test_reg$predictedRisk <- ifelse(prob_predict > 0.15, 1, 0) 
+head(test_reg)
+
+# Comparing the Risk v Predicted Risk ratio
+table(test_reg$predictedRisk) 
+table(test_reg$Risk_Flag)
+
+library(caret)
+confusionMatrix(as.factor(test_reg$predictedRisk), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+```
+As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 80.5% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 12%, and precision to predict the risk is only 14.30%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1229 accurately. It predicted 7366 customers who did not default as defaulted, and 9019 customers who actually defaulted as not defaulted. 
+
+
+### Hoslem and Lemshow Test with BIC from exhaustive method
+
+The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic regression fit. 
+
+```{r}
+loadPkg("ResourceSelection") # function hoslem.test( ) for logit model evaluation
+riskaicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskbic)) # Hosmer and Lemeshow test, a chi-squared test
+unloadPkg("ResourceSelection") 
+
+riskaicHoslem
+```
+
+
+The p-value is again well under 0.05, implying all the features as significant in this model.
+
+### ROC/AUC 
+
+```{r}
+h <- roc(Risk_Flag ~ prob_predict, data=test_reg)
+auc(h) # area-under-curve prefer 0.8 or higher.
+plot(h)
+```
+We have here the area-under-curve of `r auc(h)`, also less than 0.8 indicating the model is not a good fit.  
+
+
+
+### McFadden
+McFadden is another evaluation tool we can use on logit regressions. This is part of what is called pseudo-R-squared values for evaluation tests. We can calculate the value directly from its definition if we so choose to.
+
+```{r McFadden_direct}
+
+mcFadden = 1 - logLik(riskbic)/logLik(RiskNullLogit)
+mcFadden
+```
 
 
 
