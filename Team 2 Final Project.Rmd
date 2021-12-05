@@ -455,7 +455,11 @@ We can see above, with every increase in Age, the log odds ratio of a customer d
 
 ### Confusion Matrix
 ```{r}
-exh_aic_cm <- confusionMatrix(as.factor(riskexhaust_aic$BestModel), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+prob_predict_exh_aic <- predict(riskaic, test_reg, type='response')
+
+test_reg$prob_exh_aic <- ifelse(prob_predict_exh_aic > 0.15,1,0)
+
+exh_aic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
 xkabledply(exh_aic_cm$table)
 
 exh_aic_accuracy <- (exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1])/(exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1]+exh_aic_cm$table[2:2]+exh_aic_cm$table[3:3])
@@ -544,8 +548,14 @@ Based on the above, we can see the Top 5 models. The top model has a BIC of 1396
  
 ### Confusion Matrix
 ```{r}
-confusion_matrix(riskbestglm_bic$BestModel)
+prob_predict_exh_bic <- predict(riskbic, test_reg, type='response')
 
+test_reg$prob_exh_bic <- ifelse(prob_predict_exh_bic > 0.15,1,0)
+
+exh_bic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+xkabledply(exh_bic_cm$table)
+
+exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
 ```
 
 We will now run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`. 
@@ -593,7 +603,7 @@ riskbicHoslem
 ```
 
 
-The p-value is again well under 0.05, implying all the features as significant in this model.
+The p-value is again well under 0.05, implying all the features are significant in this model.
 
 ### ROC/AUC 
 
@@ -736,9 +746,9 @@ In developing this model with a 0.15 cutoff for default (ie if the predicted val
 
 Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
-In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a cutoff of 0.145 and correctly predicted `r cmdtt$table[4:4]` defaulted accounts and `r cmdtt$table[1:1]` non-defaulted accounts for a total accuracy of `r accuracy_tune(tune_fit)` or `r accuracy_tune(tune_fit)*100`%. Importantly, this is our first model to obtain an ROC-AUC above our desired 0.8 threshold, so this is a useful model.
+In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a cutoff of 0.145 and correctly predicted `r cmdtt[4:4]` defaulted accounts and `r cmdtt[1:1]` non-defaulted accounts for a total accuracy of `r accuracy_tune(tune_fit)` or `r accuracy_tune(tune_fit)*100`%.
 
-Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(rf_h)` and correctly predicted `r rf_cm$table[4:4]` defaulted accounts and `r rf_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r missing_classerr` or `r missing_classerr*100`%. This model once again dips below our desired AUC-ROC threshold, so is not a useful model.
+Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(rf_h)` and correctly predicted `r rf_cm[4:4]` defaulted accounts and `r rf_cm[1:1]` non-defaulted accounts for a total accuracy of `r 1-missing_classerr` or `r (1-missing_classerr)*100`%. This model once again dips below our desired AUC-ROC threshold, so is not a useful model.
 
 # Conclusion and answers to questions plus overview of our final model in terms of expected likelihood changes for differences in our variables
 
@@ -754,6 +764,49 @@ As we mentioned above, manual, exhaustive, forward, and backward model selection
 
 Pretty clearly we're able to see that the most significant predictors for default are job experience, age, marital status, home-ownership status, and car ownership status. Other variables were useful in individual models, but these were the most consistent across the models.
 
-FINAL DETERMINATION OF BEST MODEL - NEED TO DECIDE
-	• Using a confusion matrix, which of our "best" models appears to perform best across the different metrics we care about (precision, recall-rate, etc.)
-	• How do the different models fare when used on the test dataset? 	
+	
+	
+```{r}
+#Sensitivity (Recall Rate)
+manual_cm$byClass[1]
+bkwd_cm$byClass[1]
+fwd_cm$byClass[1]
+exh_aic_cm$byClass[1]
+cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2])
+rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])
+
+#Specficity
+manual_cm$byClass[2]
+bkwd_cm$byClass[2]
+fwd_cm$byClass[2]
+exh_aic_cm$byClass[2]
+cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2])
+rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])
+
+
+#Precision
+manual_cm$byClass[5]
+bkwd_cm$byClass[5]
+fwd_cm$byClass[5]
+exh_aic_cm$byClass[5]
+cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2])
+rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])
+
+#Accuracy
+manual_accuracy
+bkwd_accuracy
+fwd_accuracy
+exh_aic_accuracy
+accuracy_tune(tune_fit)
+1-missing_classerr
+```
+
+In terms of our confusion matrices based on our test dataset, our exhaustive selection method with AIC criteria produced the highest sensitivity/recall-rate of `r exh_aic_cm$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our exhaustive selection method with AIC criteria had the lowest specificity at `r exh_aic_cm$byClass[2]`. For precision, our forward selection model had the highest precision at `r fwd_cm$byClass[5]` and our decision tree model had the lowest precision at `r cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2])`.
+
+Lastly, in terms of accuracy,  our decision tree model was the most accurate at  `raccuracy_tune(tune_fit)*100`%, while our forward selection model was the least accurate at `r fwd_accuracy *100`%.
+
+
+Based on this analysis, we can determine that our best model is likely our INSERT MODEL HERE
+
+	
+	
