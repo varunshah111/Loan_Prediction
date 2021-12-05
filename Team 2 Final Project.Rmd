@@ -76,7 +76,7 @@ Before we get into any of the analysis, let's create a training dataset and a te
 
 loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 
-
+set.seed(123)
 split <- sample.split(loandata, SplitRatio = 0.75)
 # split
    
@@ -247,7 +247,7 @@ Now that we've developed a model manually that's statistically significant, but 
 
 # Backwards Selection
 
-Backward selection on AIC:
+## Backward selection on AIC:
 
 
 ```{r}
@@ -267,7 +267,7 @@ If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS from the logis
 
 
 
-Backward selection on BIC:
+## Backward selection on BIC:
 
 ```{r}
 # Use a backward stepwise algorithm on BIC to build a parsimonious model
@@ -294,7 +294,7 @@ summary(bkwd_bic_model)
 
 
 
-## ROC- AUC - Backward Selection Model
+### ROC- AUC - Backward Selection Model
 
 ```{r}
 # prob1 = predict(bkwd_bic_model,type = 'response') ## foward selection results = bkwd_bic_model_model 
@@ -316,7 +316,7 @@ table(test_reg$prob_bic)
 table(test_reg$Risk_Flag)
 ```
 
-## Confusion matrix:
+### Confusion matrix:
 
 
 ```{r, results='markup'}
@@ -342,7 +342,7 @@ foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to
 According to the AIC Forward selection method, we should have all the 8 variables in the logistics model.
 
 
-Forward selection on BIC:
+## Forward selection on BIC:
 
 ```{r}
 fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
@@ -350,7 +350,7 @@ fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg)))
 
 From forward selection with BIC as criteria we are getting 8 features also. 
 
-## ROC- AUC - Forward selection model
+### ROC- AUC - Forward selection model
 
 
 ```{r}
@@ -367,7 +367,7 @@ table(test_reg$prob_aic)
 table(test_reg$Risk_Flag)
 ```
 
-## Confusion matrix:
+### Confusion matrix:
 
 
 ```{r, results='markup'}
@@ -404,10 +404,8 @@ summary(riskexhaust_aic$BestModels)
 
 The above shows the top 5 Best Models. The top model has the AIC of 124973, where it includes all the variables.
 
-`CURRENT_HOUSE_YRS`, and second does not include `Income` either.
 
-We will run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`.
-
+We now run the model with all features included:
 
 ```{r}
 riskaic <- glm(Risk_Flag ~ Income + 
@@ -423,7 +421,7 @@ summary(riskaic)
 ```
 As we can see above, the p-value for `Income` is slightly over  $\alpha$=0.05 making it insignificant. All the other coefficients have statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
 
-We run another model removing `Income` as it is statistically insignificant.
+We run another model removing `Income` as it shows statistically insignificant.
 
 ```{r}
 riskaic <- glm(Risk_Flag ~ Age + 
@@ -436,7 +434,7 @@ riskaic <- glm(Risk_Flag ~ Age +
 
 summary(riskaic)
 ```
-Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.  
+Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.    
 
 For every year increase in `Experience`, the log odds ratio of default reduces by 0.02.  
 
