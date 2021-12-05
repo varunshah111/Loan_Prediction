@@ -185,12 +185,6 @@ Now that we've developed a model manually that's significant, let's see what hap
 
 
 
-
-
-# Backwards Selection
-
-Backward selection on AIC:
-
 ### Splitting the dataset to Train 75% & Test 25%
 
 ```{r}
@@ -200,12 +194,16 @@ loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 
 
 split <- sample.split(loandata, SplitRatio = 0.75)
-split
+# split
    
 train_reg <- subset(loandata, split == "TRUE")
 test_reg <- subset(loandata, split == "FALSE")
 
 ```
+
+# Backwards Selection
+
+Backward selection on AIC:
 
 
 ```{r}
@@ -221,24 +219,8 @@ bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper 
 
 
 
-If we consider AIC as a criterion we should have all the 8 variables in the logistics model.
+If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS from the logistics model.
 
-Now let's the the VIF score to find out the multicolinearity.
-```{r}
-# library(car)
-# xkablevif(full_model, wide=FALSE)
-vif(full_model)
-```
-
-<!-- Confusion matrix: -->
-
-```{r}
-# loadPkg("regclass")
-# cmaic <- confusion_matrix(full_model)
-# xkabledply( cmaic, title = "Confusion matrix from Logit Model on AIC" )
-# accuracy1 = (cmaic[1] +cmaic[5]) / cmaic[9]
-# unloadPkg("regclass")
-```
 
 
 Backward selection on BIC:
@@ -248,7 +230,8 @@ Backward selection on BIC:
 bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(train_reg)))
 ```
 
-From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. Now let's make a model with these 6 features.
+From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. 
+As BIC is giving us less features we can consider this as the final model with backward elimination. Now let's make a model with these 6 features.
 
 
 ```{r}
@@ -258,11 +241,11 @@ summary(bkwd_bic_model)
 
 ```
 
-Now let's the the VIF score to find out the multicolinearity.
+
 ```{r}
 # library(car)
 # xkablevif(bkwd_bic_model, wide=FALSE)
-vif(bkwd_bic_model) 
+# vif(bkwd_bic_model) 
 ```
 
 
@@ -311,7 +294,7 @@ foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to
 
 ```
 
-According to the AIC Forward selection method we should have all the 8 variables in the logistics model.
+According to the AIC Forward selection method, we should have all the 8 variables in the logistics model.
 
 
 Forward selection on BIC:
@@ -387,13 +370,72 @@ xkabledply(fwd_cm$table)
 
 ```
 
+# Decision Tree 
+Model
+
+```{r, results='markup'}
+library(rpart)
+library(rpart.plot)
+
+dt <- rpart(Risk_Flag ~ ., data = train_reg, method= "class")
+# predicting in test set
+predict_dt_test <- predict(dt, test_reg, type = 'class')
+#confusion matrix  
+cmdt <- table(test_reg$Risk_Flag, predict_dt_test)
+xkabledply( cmdt, title = "Confusion matrix from Decision Tree" )
+# Accuracy
+acc_dt <-  sum(diag(cmdt)) / sum(cmdt)
+print(paste('Decision Tree Accuracy =', acc_dt))
+
+
+
+# plot(dt)
+
+```
+
+As making the decision tree with default conditions couldn't predict properly, we are making another tree by tuning the accuracy and controlling the tree parameters.
+
+
+```{r, results='markup'}
+
+accuracy_tune <- function(fit) {
+    predict_unseen <- predict(fit, test_reg, type = 'class')
+    table_mat <- table(test_reg$Risk_Flag, predict_unseen)
+    accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+    accuracy_Test
+}
+
+control <- rpart.control(minsplit = 3,
+    minbucket = round(4 / 3),
+    maxdepth = 30,
+    cp = 0)
+
+tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
+accuracy_tune(tune_fit)
+
+#confusion matrix  
+predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
+cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
+xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
+```
+
+```{r, results='hide'}
+plot(tune_fit)
+# text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
+```
+```{r}
+# library(caret)
+# varImp(tune_fit)
+```
+
+Now the accuracy has increased and the model can predict defaulted cases as well, even though the precision isn't that satisfactory.
 
 # Random Forest 
 
 
 Model
 
-```{r}
+```{r, results='markup'}
 #install.packages("randomForest")
 library(randomForest)
 
@@ -408,13 +450,11 @@ xkabledply( cm, title = "Confusion matrix from Random Forest" )
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
 
-#plot(rf)
+plot(rf)
 
 
 
 ```
-
-
 
 
 
@@ -432,8 +472,7 @@ summary(house_job_exp_age_limit_marital_income_car)
 
 The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
 
-The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + 
-    Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS"**
+The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS"**
 
 The final model for exhaustive selection was: 
 
