@@ -177,13 +177,30 @@ summary(house_job_exp_age_limit_marital_income_car)
 
 When we add in car ownership, we see that income becomes insignificant, while everything else remains significant. This means that knowing an individuals income or car ownership status is significant, but not both when we already know this other information. If we examine our AIC values, we see that when our model uses income, we have an AIC of `r house_job_exp_age_limit_marital_income$aic`, while our model that uses car ownership has an AIC of `r house_job_exp_age_limit_marital_income_car$aic`. Therefore, if we use AIC as our criteria of "goodness", then our model using car ownership is the better model.
 
-ADDITIONAL ANALYSIS OF THIS MODEL INCLUDING ROC-AUC, PSEUDO-R^2, CONFUSION MATRIX, ETC.
+Now that we've determined this is our "best" model using manual regression techniques, let's do some analysis about how good this model actually is.
+
+```{r}
+library('pROC')
+prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, loandata, type='response')
+loandata$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
+sum(loandata$prob_manual==1)
+sum(loandata$Risk_Flag==1)
+h_manual <- roc(Risk_Flag ~ prob_manual, data = loandata)
+auc(h_manual)
+plot(h_manual)
+```
+
+If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the right accounts as those who will default.
+
+```{r}
+library(caret)
+manual_cm <- confusionMatrix(as.factor(loandata$prob_manual), as.factor(loandata$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+xkabledply(manual_cm$table)
+manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
+```
 
 
-Now that we've developed a model manually that's significant, let's see what happens if we use algorithms to build a good model.
-
-
-
+Now that we've developed a model manually that's statistically significant, but practically useless, let's see what happens if we use algorithms to try and build a good model.
 
 ### Splitting the dataset to Train 75% & Test 25%
 
@@ -464,11 +481,9 @@ plot(rf)
 Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We'll start with an analysis of our model diagnostics between each model before running each model against our test dataset to confirm we aren't seeing over fitting.
 
 The final model for manual logistic regression was: 
-(This will be deleted, but just for model name reference for comparison coding)
-```{r}
-house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = loandata, family = 'binomial')
-summary(house_job_exp_age_limit_marital_income_car)
-```
+**"Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single"**
+
+In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of 0.518 and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
 The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
 
@@ -478,13 +493,6 @@ The final model for exhaustive selection was:
 
 
 
-### Comparison of AIC
-
-### Comparison of BIC
-
-### Comparison of Pseudo-R-Squared
-
-### Comparison of ROC-AUC
 
 ## Using our Test Dataset
 ### Comparison of Confusion Matrix (is this a confusion matrix or is this called something else)
