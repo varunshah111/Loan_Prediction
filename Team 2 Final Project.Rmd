@@ -560,7 +560,7 @@ cmdt <- table(test_reg$Risk_Flag, predict_dt_test)
 xkabledply( cmdt, title = "Confusion matrix from Decision Tree" )
 # Accuracy
 acc_dt <-  sum(diag(cmdt)) / sum(cmdt)
-print(paste('Decision Tree Accuracy =', acc_dt))
+print(paste('Decision Tree Accuracy before tunning =', acc_dt))
 # plot(dt)
 ```
 
@@ -585,8 +585,11 @@ predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
 cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
 xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
 ```
+Decision Tree Accuracy with Tuning: 0.88%
+
 
 ```{r, results='hide'}
+library(tidyverse)
 plot(tune_fit)
 # text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
 #ROC-AUC Calculation for Decision Tree
@@ -595,6 +598,22 @@ test_reg$prob_dt <- ifelse(pred[,1] > 0.855,0,1)
 dt_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
 auc(dt_h)
 plot(dt_h)
+
+## Feature Importance  
+df <- data.frame(imp = tune_fit$variable.importance)
+df2 <- df %>% 
+  tibble::rownames_to_column() %>% 
+  dplyr::rename("variable" = rowname) %>% 
+  dplyr::arrange(imp) %>%
+  dplyr::mutate(variable = forcats::fct_inorder(variable))
+ggplot2::ggplot(df2) +
+  geom_col(aes(x = variable, y = imp),
+           col = "black", show.legend = F) +
+  ggtitle('Decision Tree Feature importance')+
+  coord_flip() +
+  scale_fill_grey() +
+  theme_bw()
+
 ```
 ```{r}
 # library(caret)
@@ -626,6 +645,21 @@ test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
 rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
 auc(rf_h)
 plot(rf_h)
+
+# RF tunning takes a lot of time to run.
+#confusionMatrix(predict_test,test_reg$Risk_Flag)
+#predict_test <- predict(rf,train_reg,type='response')
+#confusionMatrix(predict_test,train_reg$Risk_Flag)
+#t <- tuneRF(train_reg[,-9],train_reg[,9], 
+ #       stepFactor = 0.5,
+#        plot = TRUE,
+#        ntree_Try = 100,
+#        trace= TRUE,
+#       improve = 0.05)
+# 
+varImpPlot(rf)
+
+
 ```
 
 
