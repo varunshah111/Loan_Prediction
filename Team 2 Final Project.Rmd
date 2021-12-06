@@ -165,10 +165,10 @@ house_job_exp_age_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + 
 summary(house_job_exp_age_inter)
 ```
 
-Looking at our model outputs, we see that all of our non-interaction variables are still significant. Additionally, we see that the interaction between job experience and age is significant, as well as the interaction between home ownership (Neither) and age is significant. Notably, the interaction between job experience and home ownership is still not significant and the interaction between home ownership (Owning) and age is not significant. However, since one of the two home ownership categorical variables is significant with age, we'll keep both in the model.
+Looking at our model outputs, we see that all of our non-interaction variables are still significant. Additionally, we see that the interaction between job experience and age is not significant, as well as the interaction between home ownership (Neither) and age is significant. Notably, the interaction between job experience and home ownership is still not significant and the interaction between home ownership (Owning) and age is not significant. However, since one of the two home ownership categorical variables is significant with age, we'll keep both in the model.
 
 ```{r}
-house_job_exp_age_limit_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age +  Experience:Age + House_Ownership:Age, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + House_Ownership:Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_inter)
 ```
 
@@ -176,14 +176,14 @@ As expected, when we rerun the model without the insignificant job experience an
 
 Now, let's try adding in marital status, our final variable we know has significance on it's own.
 ```{r}
-house_job_exp_age_limit_marital <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital)
 ```
 
-We see here that marital status is significant in our model with a p-value <0.001.
+We see here that marital status is significant in our model with a p-value <0.001, but age and experience are not significant as an interaction term.
 
 ```{r}
-house_job_exp_age_limit_marital_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_inter)
 ```
 Examining a model with the interaction terms, the interaction of home ownership and marriage status is significant for the combination of owning a home and married relative to the base value of Renting and Single.
@@ -191,7 +191,7 @@ Examining a model with the interaction terms, the interaction of home ownership 
 Now, let's see what happens if we add income into our model. From our EDA we found that income was not significantly different between those who defaulted on their loans and those who didn't. However, we're curious to see if income is a significant variable when we are already considering job experience, home ownership status, age, and the combinations of home ownership and age plus job experience and age.
 
 ```{r}
-house_job_exp_age_limit_marital_income <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital_income <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_income)
 ```
 
@@ -199,7 +199,7 @@ Based on our model outputs, income doesn't provide added value when we already k
 
 Finally, let's see what happens if we add in car ownership to our model and remove income.
 ```{r}
-house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Income + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_income_car)
 ```
 
@@ -208,6 +208,7 @@ When we add in car ownership, we see that income becomes insignificant, while ev
 Now that we've determined this is our "best" model using manual regression techniques, let's do some analysis about how good this model actually is using our test data est.
 
 ```{r}
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, test_reg, type='response')
 test_reg$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
 h_manual <- roc(Risk_Flag ~ prob_manual, data = test_reg)
@@ -239,7 +240,7 @@ For each additional year of experience gained, we expect the odds ratio to decre
 
 For each additional year older someone is, we expect the odds ratio to decrease by `r expcoeff[5]` which corresponds to a decrease in default odds of `r (1-expcoeff[5])*100`%. This makes sense because of similar logic as experience. Going from single to married also decreases the odds ratio by `r expcoeff[6]` which corresponds to a decrease in default odds of `r (1-expcoeff[6])*100`%. The most likely explanation here is that going from single to married means that there are two incomes involved in paying off a loan or that the types of loans taken by married individuals are lower valued and get paid back more frequently. We don't have these variables in our model, unfortunately, so for now they remain speculation. Lastly, for our non-interaction terms, we see that going from not owning a car to owning a car shows an odds ratio decrease of `r expcoeff[7]` which corresponds to a decrease in default odds of `r (1-expcoeff[7])*100`%.
 
-Now, let's examine our interaction variables, which in a logistic regression correspond to a ratio of odds ratios. We're going to interpret these a little bit more loosely than our individual coefficients. The interaction between age an experience has a coefficient of `r expcoeff[8]` This means that age and experience move together and that as an individual stays equally experienced and old, their odds of defaulting hold steady, but if these move in opposite directions, then we'd start to see some change in likelihood of defaulting. For owning a home and age, our likelihood is approximately 1 again, where the older an individual is, the more impactful it is to start owning a home in terms of decreasing odds of default. Likewise, to move from renting to neither, the older an individual is, the likelier it is that they will default relative to a younger individual doing the same thing.
+Now, let's examine our interaction variables, which in a logistic regression correspond to a ratio of odds ratios. We're going to interpret these a little bit more loosely than our individual coefficients. For owning a home and age, our likelihood is approximately 1, where the older an individual is, the more impactful it is to start owning a home in terms of decreasing odds of default. Likewise, to move from renting to neither, the older an individual is, the likelier it is that they will default relative to a younger individual doing the same thing.
 
 Finally, moving from renting and single, or renting and married, or single to owning a home and being married, increases the odds ratio by `r expcoeff[11]` which corresponds to an increase in default odds of `r (expcoeff[11]-1)*100`%. One theory for why this may occur is that both owning a home and marriage are big commitments both in life and financially. As a result, it may be that taking on this much commitment at once, puts financial stress on the individual, and therefore increases the odds they default. However, moving from renting and single, or renting and married, or single to neither owning a home nor renting plus being married decreases the odds ratio by `r expcoeff[12]` which corresponds to a decrease in default odds of `r (1-expcoeff[12])*100`%.
 
