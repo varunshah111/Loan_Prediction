@@ -535,7 +535,10 @@ test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0)
 # Comparing the Risk v Predicted Risk ratio
 table(test_reg$predictedRisk) 
 table(test_reg$Risk_Flag)
-confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm <- confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm
+exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
+exh_bic_accuracy
 ```
 As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 81.9% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 10.58%, and precision to predict the risk is slightly better than before at 15.57%. 
 
@@ -707,28 +710,28 @@ Pretty clearly we're able to see that the most significant predictors for defaul
 manual_cm$byClass[1]
 bkwd_cm$byClass[1]
 fwd_cm$byClass[1]
-exh_aic_cm$byClass[1]
+exh_bic_cm$byClass[1]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])
 #Specficity
 manual_cm$byClass[2]
 bkwd_cm$byClass[2]
 fwd_cm$byClass[2]
-exh_aic_cm$byClass[2]
+exh_bic_cm$byClass[2]
 cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2])
 rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])
 #Precision
 manual_cm$byClass[5]
 bkwd_cm$byClass[5]
 fwd_cm$byClass[5]
-exh_aic_cm$byClass[5]
+exh_bic_cm$byClass[5]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])
 #Accuracy
 manual_accuracy
 bkwd_accuracy
 fwd_accuracy
-exh_aic_accuracy
+exh_bic_accuracy
 accuracy_tune(tune_fit)
 1-missing_classerr
 ```
