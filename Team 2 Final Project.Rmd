@@ -1,5 +1,5 @@
 ---
-title: "Mini Project Team 2"
+title: "Final Project Team 2"
 authors: "By: Cooper, Nusrat, Ricardo, and Varun"
 date: "`r Sys.Date()`"
 output:
@@ -390,25 +390,10 @@ riskexhaust_aic$BestModels
 summary(riskexhaust_aic$BestModels)
 ```
 
-The above shows the top 5 Best Models. The top model has the AIC of 124973, where it includes all the variables.
+The above shows the top 5 Best Models. The top model has the AIC of 124466, where it includes all the variables.
 
 
-We now run the model with all features included:
-
-```{r}
-riskaic <- glm(Risk_Flag ~ Income + 
-                 Age + 
-                 Experience + 
-                 Married.Single + 
-                 House_Ownership +
-                 Car_Ownership + 
-                 CURRENT_JOB_YRS +
-                 CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
-summary(riskaic)
-```
-As we can see above, the p-value for `Income` is slightly over  $\alpha$=0.05 making it insignificant. All the other coefficients have statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
-
-We run another model removing `Income` as it shows statistically insignificant.
+We now run the model with all the features included except `Income` and `CURRENT_HOUSE_YRS`
 
 ```{r}
 riskaic <- glm(Risk_Flag ~ Age + 
@@ -420,23 +405,33 @@ riskaic <- glm(Risk_Flag ~ Age +
                  CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
 summary(riskaic)
 ```
+As we see here, all the coefficients, `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership` and `CURRENT_JOB_YRS` are statistically significant, with low p-values.
+
 Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.    
 
 For every year increase in `Experience`, the log odds ratio of default reduces by 0.02.  
 
 Marital Status shows, for person being married vs single, the log odds of risk reduces by 0.23 when the person is married vs when they are single.
 
-The coefficients of Home Ownership show that a consumer owning a home reduces the log odds of a risk by 0.35, when compared with someone who is renting. The person who is neither renting or owning a home also reduces the log odds of risk by 0.32.
+The coefficients of Home Ownership show that a consumer owning a home reduces the log odds of a risk by 0.40, when compared with someone who is renting. The person who is neither renting or owning a home also reduces the log odds of risk by 0.32.
 
 Car ownership also reduces the log odds of a risk of default by 0.01.
 
-Another way to look at the above is by looking at the Odds-Ratio:  
+Another way to look at the above is by looking at the Odds-Ratio: 
+
+```{r}
+expcoeff_exh = exp(coef(riskaic))
+# expcoeff
+xkabledply( as.table(expcoeff_exh), title = "Exponential of coefficients in Exhaustive Logit Reg" )
+
+```
+
 
 ```{r}
 ## odds ratios and 95% CI
 exp(cbind(OR = coef(riskaic), confint(riskaic)))
 ```
-We can see above, with every increase in Age, the log odds ratio of a customer defaulting changes by 0.996 (which is the same as what we looked earlier), and we have similar results for other features.
+We can see above, with every increase in Age, the log odds ratio of a customer defaulting changes by 0.996, and we have similar results for other features.
 
 
 ### Confusion Matrix
@@ -464,8 +459,7 @@ table(test_reg$predictedRisk_aic)
 table(test_reg$Risk_Flag)
 confusionMatrix(as.factor(test_reg$predictedRisk_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
-The above Confusion Matrix shows us an Accuracy of 81% on the test set. Although a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 12%, and precision for them is only 15%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1277 accurately. It predicted 7201 customers who did not default as defaulted, and 8971 customers who actually defaulted as not defaulted.
-
+The above Confusion Matrix shows us an Accuracy of 81.9% on the test set. Although a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 10.34%, and precision to predict the defaulted customers is only 15.37%. 
 
 ### Hoslem and Lemshow Test for AIC from exhaustive method
 
@@ -511,21 +505,26 @@ summary(riskbestglm_bic)
 riskbestglm_bic$BestModels
 summary(riskbestglm_bic$BestModels)
 ```
-Based on the above, we can see the Top 5 models. The top model has a BIC of 139651, which includes all the features except for `Income` and `CURRENT_HOUSE_YRS`
+Based on the above, we can see the Top 5 models. The top model has a BIC of 124534, which includes all the features except for `Income`, `CURRENT_HOUSE_YRS` and `CURRENT_JOB_YRS`
 
-We will now run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`. 
+We will now run a glm model based on the Best Model we got here, without including `Income`,`CURRENT_HOUSE_YRS`and `CURRENT_JOB_YRS` 
 
 ```{r}
 riskbic <- glm(Risk_Flag ~ Age + 
                  Experience + 
                  Married.Single + 
                  House_Ownership +
-                 Car_Ownership +
-                 CURRENT_JOB_YRS, data = train_reg, family = "binomial")
+                 Car_Ownership, data = train_reg, family = "binomial")
 summary(riskbic)
 ```
+The baseline here is again, a customer who is Single, Renting and who does not own a car.
 
-We have a similar result here, except we have removed the Current Years in Home variable.
+We have a similar result here, a year in increase in `Age` reduces the log odds of ratio of default by 0.04.
+
+The customer who is married, reduces the log odds ratio of defaulting by 0.23 when compared to someone who is single.
+
+Also, a customer owning a home also reduces the log odds ratio of defaulting by 0.40. Car Ownership also reduces the log odds ratio of defaulting by a factor of 0.165. 
+
 
 We will also check this model by running it on our test data (as we did earlier). 
 
@@ -536,10 +535,12 @@ test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0)
 # Comparing the Risk v Predicted Risk ratio
 table(test_reg$predictedRisk) 
 table(test_reg$Risk_Flag)
-confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm <- confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm
+exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
+exh_bic_accuracy
 ```
-As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 80.5% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 12%, and precision to predict the risk is only 14.30%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1229 accurately. It predicted 7366 customers who did not default as defaulted, and 9019 customers who actually defaulted as not defaulted. 
-
+As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 81.9% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 10.58%, and precision to predict the risk is slightly better than before at 15.57%. 
 
 ### Hoslem and Lemshow Test with BIC from exhaustive method
 
@@ -709,28 +710,28 @@ Pretty clearly we're able to see that the most significant predictors for defaul
 manual_cm$byClass[1]
 bkwd_cm$byClass[1]
 fwd_cm$byClass[1]
-exh_aic_cm$byClass[1]
+exh_bic_cm$byClass[1]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])
 #Specficity
 manual_cm$byClass[2]
 bkwd_cm$byClass[2]
 fwd_cm$byClass[2]
-exh_aic_cm$byClass[2]
+exh_bic_cm$byClass[2]
 cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2])
 rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])
 #Precision
 manual_cm$byClass[5]
 bkwd_cm$byClass[5]
 fwd_cm$byClass[5]
-exh_aic_cm$byClass[5]
+exh_bic_cm$byClass[5]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])
 #Accuracy
 manual_accuracy
 bkwd_accuracy
 fwd_accuracy
-exh_aic_accuracy
+exh_bic_accuracy
 accuracy_tune(tune_fit)
 1-missing_classerr
 ```
