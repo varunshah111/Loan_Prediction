@@ -222,13 +222,12 @@ All that being said, let's still do some interpretation of our coefficients, to 
 expcoeff = exp(coef(house_job_exp_age_limit_marital_income_car))
 # expcoeff
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Manual Logit Reg" )
-
 ```
 
 In these interpretations, these odds ratio changes are true on average when holding all other variables constant in the model.
 
 
-For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experiencec lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experience lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
 
 For each additional year older someone is, we expect the odds ratio to decrease by `r expcoeff[5]` which corresponds to a decrease in default odds of `r (1-expcoeff[5])*100`%. This makes sense because of similar logic as experience. Going from single to married also decreases the odds ratio by `r expcoeff[6]` which corresponds to a decrease in default odds of `r (1-expcoeff[6])*100`%. The most likely explanation here is that going from single to married means that there are two incomes involved in paying off a loan or that the types of loans taken by married individuals are lower valued and get paid back more frequently. We don't have these variables in our model, unfortunately, so for now they remain speculation. Lastly, for our non-interaction terms, we see that going from not owning a car to owning a car shows an odds ratio decrease of `r expcoeff[7]` which corresponds to a decrease in default odds of `r (1-expcoeff[7])*100`%.
 
@@ -254,7 +253,7 @@ bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper 
 
 
 
-If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS from the logistics model.
+If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS & INCOME from the logistics model.
 
 
 
@@ -265,12 +264,13 @@ If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS from the logis
 bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(train_reg)))
 ```
 
-From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. 
-As BIC is giving us less features we can consider this as the final model with backward elimination. Now let's make a model with these 6 features.
+From backward selection with BIC as criteria we are getting 5 features. It excluded Income, CURRENT_HOUSE_YRS and CURRENT_JOB_YRS. 
+
+As BIC is giving us less features we can consider this as the final model with backward elimination. Now let's make a model with these 5 features.
 
 
 ```{r}
-bkwd_bic_model <- glm(Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
+bkwd_bic_model <- glm(Risk_Flag ~ Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
 summary(bkwd_bic_model)
 ```
 
@@ -279,7 +279,6 @@ summary(bkwd_bic_model)
 ### ROC- AUC - Backward Selection Model
 
 ```{r}
-
 prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
 test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
 bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
@@ -300,6 +299,16 @@ bkwd_cm
 bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
 ```
 
+Let's find out the exponential of cofficients for this model
+
+```{r, results='markup'}
+expcoeff_bk = exp(coef(bkwd_bic_model))
+# expcoeff
+xkabledply( as.table(expcoeff_bk), title = "Exponential of coefficients in Backward Logit Reg" )
+```
+
+
+For each additional age increase, we expect the odds ratio to decrease by `r expcoeff_bk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[2])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_bk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[3])*100`%. If a customer owns a car then odds ratio to decrease by `r expcoeff_bk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[4])*100`%. Moving on to, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_bk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[5])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_bk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[6])*100`%. For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_bk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[7])*100`%. As expected since having more experience lowers the likelihood that a customer will not pay back their loan.
 
 
 # Forward Selection
@@ -307,25 +316,34 @@ bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkw
 
 
 ```{r}
-foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC 
+# foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC 
+foward_aic_model <- step(null_model, scope = list(lower = null_model, upper = full_model), direction = "forward", k=2)
 ```
 
-According to the AIC Forward selection method, we should have all the 8 variables in the logistics model.
+According to the AIC Forward selection method, we should have the same 6 features as above for the logistics model.
 
 
 ## Forward selection on BIC:
 
 ```{r}
-fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
+# fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
+fwd_BIC_model <- step(null_model, scope = list(lower = null_model, upper = full_model), direction = "forward", k=log(nrow(train_reg)))
 ```
 
-From forward selection with BIC as criteria we are getting 8 features also. 
+From forward selection with BIC as criteria we are getting 5 features excluding the Income, CURRENT_JOB_YRS, and CURRENT_HOUSE_YRS. 
+As, BIC is giving us less features we are taking this as final forward selection model.
+
+```{r}
+fwd_BIC_model <- glm(Risk_Flag ~ Experience + House_Ownership + Car_Ownership + Married.Single + Age, data = train_reg, family = "binomial")
+summary(fwd_BIC_model)
+```
+
 
 ### ROC- AUC - Forward selection model
 
 
 ```{r}
-prob_predictaic <- predict(full_model, test_reg, type='response')
+prob_predictaic <- predict(fwd_BIC_model, test_reg, type='response')
 test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
 fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
 auc(fwd_h)
@@ -345,7 +363,15 @@ fwd_cm
 fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
 ```
 
+Let's find out the exponential of coefficients for this model
 
+```{r, results='markup'}
+expcoeff_fk = exp(coef(fwd_BIC_model))
+# expcoeff
+xkabledply( as.table(expcoeff_fk), title = "Exponential of coefficients in Forward Logit Reg" )
+```
+
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_fk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[2])*100`%. if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_fk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[3])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_fk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[4])*100`%. Moving on to, if a customer owns a car then odds ratio to decrease by `r expcoeff_fk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[5])*100`%. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_fk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[6])*100`%. Finally, as age increases, we expect the odds ratio to decrease by `r expcoeff_fk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[7])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default.
 
 # Exhaustive Selection
 
@@ -619,9 +645,7 @@ xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
 # Accuracy
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
-
 plot(rf)
-
 test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
 rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
 auc(rf_h)
