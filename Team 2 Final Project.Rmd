@@ -1,5 +1,5 @@
 ---
-title: "Mini Project Team 2"
+title: "Final Project Team 2"
 authors: "By: Cooper, Nusrat, Ricardo, and Varun"
 date: "`r Sys.Date()`"
 output:
