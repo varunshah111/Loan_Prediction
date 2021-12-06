@@ -601,8 +601,8 @@ accuracy_tune <- function(fit) {
     accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
     accuracy_Test
 }
-control <- rpart.control(minsplit = 4,
-    minbucket = 2,
+control <- rpart.control(minsplit = 3,
+    minbucket = round(4 / 3),
     maxdepth = 30,
     cp = 0)
 tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
@@ -642,6 +642,10 @@ ggplot2::ggplot(df2) +
   theme_bw()
 
 ```
+
+Here, Income is having the highest importance followed by Age and Experience. House_Ownership is having the least imporance is decision tree.
+
+
 ```{r}
 # library(caret)
 # varImp(tune_fit)
@@ -688,6 +692,8 @@ varImpPlot(rf)
 
 ```
 
+Here as well, Income is having the highest importance followed by Age and Experience. But unlike decision tree here the least important feature is marital status (Married.Single).
+
 
 # "Best" Model Comparisons
 
@@ -708,13 +714,13 @@ In developing this model with a 0.115 cutoff for default (ie if the predicted va
 
 The final model for exhaustive selection (optimized for BIC) was: **"Risk_Flag ~ Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS"**
 
-In developing this model with a 0.15 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_bic)` and correctly predicted `r exh_bic_cm$table[4:4]` defaulted accounts and `r exh_bic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_bic_accuracy` or `r exh_bic_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
+In developing this model with a 0.15 cutoff for default (i.e. if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_bic)` and correctly predicted `r exh_bic_cm$table[4:4]` defaulted accounts and `r exh_bic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_bic_accuracy` or `r exh_bic_accuracy*100`%. The exhaustive selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization and 0.115 for forward selection.
 
 Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
-In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a cutoff of 0.145 and correctly predicted `r cmdtt[4:4]` defaulted accounts and `r cmdtt[1:1]` non-defaulted accounts for a total accuracy of `r accuracy_tune(tune_fit)` or `r accuracy_tune(tune_fit)*100`%.
+In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a cutoff of 0.145 and correctly predicted `r cmdtt[4:4]` defaulted accounts and `r cmdtt[1:1]` non-defaulted accounts for a total accuracy of `r accuracy_tune(tune_fit)` or `r accuracy_tune(tune_fit)*100`%. Also, Income and Age are having the highest importance in this tree model.
 
-Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(rf_h)` and correctly predicted `r rf_cm[4:4]` defaulted accounts and `r rf_cm[1:1]` non-defaulted accounts for a total accuracy of `r 1-missing_classerr` or `r (1-missing_classerr)*100`%. This model once again dips below our desired AUC-ROC threshold, so is not a useful model.
+Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(rf_h)` and correctly predicted `r rf_cm[4:4]` defaulted accounts and `r rf_cm[1:1]` non-defaulted accounts for a total accuracy of `r 1-missing_classerr` or `r (1-missing_classerr)*100`%. This model once again dips below our desired AUC-ROC threshold, so is not a useful model. Here as well, Income is having the highest importance followed by Age and Experience.
 
 # Answering our SMART Questions
 
@@ -773,4 +779,4 @@ In terms of our confusion matrices based on our test dataset, our forward select
 
 Lastly, in terms of accuracy,  our decision tree model was the most accurate at  `raccuracy_tune(tune_fit)*100`%, while our forward selection model was the least accurate at `r fwd_accuracy *100`%.
 
-Based on this analysis, we can determine that our best model is likely our decision tree model. It was second highest in precision, sensitivity, and specificity, and highest in accuracy which means it was, across the board, generally not as bad as the other models. That being said, it still was not a statistically useful model for predictions.
+Based on this analysis, we can determine that our best model is likely our **decision tree** model. It was second highest in precision, sensitivity, and specificity, and highest in accuracy which means it was, across the board, generally not as bad as the other models. That being said, it still was not a statistically useful model for predictions.
