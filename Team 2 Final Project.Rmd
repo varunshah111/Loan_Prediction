@@ -213,7 +213,7 @@ plot(h_manual)
 
 If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the truly defaulting accounts as those who will default.
 
-```{r, include='markup'}
+```{r, results='show'}
 manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 manual_cm
 xkabledply(manual_cm$table)
@@ -605,7 +605,7 @@ accuracy_tune <- function(fit) {
     accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
     accuracy_Test
 }
-control <- rpart.control(minsplit = 3,
+control <- rpart.control(minsplit = 4,
     minbucket = round(4 / 3),
     maxdepth = 30,
     cp = 0)
@@ -619,9 +619,14 @@ xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
 Decision Tree Accuracy with Tuning: 0.88%
 
 
+```{r}
+plot(tune_fit)
+```
+
+
 ```{r, results='show'}
 library(tidyverse)
-plot(tune_fit)
+# plot(tune_fit)
 # text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
 #ROC-AUC Calculation for Decision Tree
 pred <- predict(tune_fit, newdata=test_reg)
