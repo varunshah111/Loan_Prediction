@@ -1,5 +1,5 @@
 ---
-title: "Mini Project Team 2"
+title: "Final Project Team 2"
 authors: "By: Cooper, Nusrat, Ricardo, and Varun"
 date: "`r Sys.Date()`"
 output:
@@ -19,8 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r init, include=FALSE}
-# some of common options (and the defaults) are: 
-# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right', 
+# some of common options (and the defaults) are:
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right',
 library(ezids)
 library(dplyr)
 library(lmtest)
@@ -37,8 +37,8 @@ library(rpart.plot)
 library(randomForest)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
-options(scientific=T, digits = 3) 
-# options(scipen=9, digits = 3) 
+options(scientific=T, digits = 3)
+# options(scipen=9, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
@@ -72,7 +72,7 @@ loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 set.seed(123)
 split <- sample.split(loandata, SplitRatio = 0.75)
 # split
-   
+
 train_reg <- subset(loandata, split == "TRUE")
 test_reg <- subset(loandata, split == "FALSE")
 ```
@@ -92,7 +92,7 @@ Once again, we've developed some questions to help guide us in the model develop
 	• What are the most significant predictors for default, and do they appear across all of the "best" models?
 	• Using a confusion matrix, which of our "best" models appears to perform best across the different metrics we care about (precision, recall-rate, etc.)
 	• How do the different models fare when used on the test dataset? 	
-	
+
 To begin with, let's go ahead and use the knowledge we learned through EDA to develop some logistic regression models manually. This will allow us to then guage how good our "best" models are against what we think should be a good model.
 
 # Preliminary Model Development
@@ -222,13 +222,12 @@ All that being said, let's still do some interpretation of our coefficients, to 
 expcoeff = exp(coef(house_job_exp_age_limit_marital_income_car))
 # expcoeff
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Manual Logit Reg" )
-
 ```
 
 In these interpretations, these odds ratio changes are true on average when holding all other variables constant in the model.
 
 
-For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experiencec lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experience lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
 
 For each additional year older someone is, we expect the odds ratio to decrease by `r expcoeff[5]` which corresponds to a decrease in default odds of `r (1-expcoeff[5])*100`%. This makes sense because of similar logic as experience. Going from single to married also decreases the odds ratio by `r expcoeff[6]` which corresponds to a decrease in default odds of `r (1-expcoeff[6])*100`%. The most likely explanation here is that going from single to married means that there are two incomes involved in paying off a loan or that the types of loans taken by married individuals are lower valued and get paid back more frequently. We don't have these variables in our model, unfortunately, so for now they remain speculation. Lastly, for our non-interaction terms, we see that going from not owning a car to owning a car shows an odds ratio decrease of `r expcoeff[7]` which corresponds to a decrease in default odds of `r (1-expcoeff[7])*100`%.
 
@@ -254,7 +253,7 @@ bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper 
 
 
 
-If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS from the logistics model.
+If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS & INCOME from the logistics model.
 
 
 
@@ -265,12 +264,13 @@ If we consider AIC as a criterion we can remove CURRENT_HOUSE_YRS from the logis
 bkwrd_BIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=log(nrow(train_reg)))
 ```
 
-From backward selection with BIC as criteria we are getting 6 features. It excluded Income and CURRENT_HOUSE_YRS. 
-As BIC is giving us less features we can consider this as the final model with backward elimination. Now let's make a model with these 6 features.
+From backward selection with BIC as criteria we are getting 5 features. It excluded Income, CURRENT_HOUSE_YRS and CURRENT_JOB_YRS.
+
+As BIC is giving us less features we can consider this as the final model with backward elimination. Now let's make a model with these 5 features.
 
 
 ```{r}
-bkwd_bic_model <- glm(Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
+bkwd_bic_model <- glm(Risk_Flag ~ Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
 summary(bkwd_bic_model)
 ```
 
@@ -279,7 +279,6 @@ summary(bkwd_bic_model)
 ### ROC- AUC - Backward Selection Model
 
 ```{r}
-
 prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
 test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
 bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
@@ -300,6 +299,16 @@ bkwd_cm
 bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
 ```
 
+Let's find out the exponential of cofficients for this model
+
+```{r, results='markup'}
+expcoeff_bk = exp(coef(bkwd_bic_model))
+# expcoeff
+xkabledply( as.table(expcoeff_bk), title = "Exponential of coefficients in Backward Logit Reg" )
+```
+
+
+For each additional age increase, we expect the odds ratio to decrease by `r expcoeff_bk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[2])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_bk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[3])*100`%. If a customer owns a car then odds ratio to decrease by `r expcoeff_bk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[4])*100`%. Moving on to, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_bk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[5])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_bk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[6])*100`%. For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_bk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[7])*100`%. As expected since having more experience lowers the likelihood that a customer will not pay back their loan.
 
 
 # Forward Selection
@@ -307,25 +316,34 @@ bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkw
 
 
 ```{r}
-foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC 
+# foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC
+foward_aic_model <- step(null_model, scope = list(lower = null_model, upper = full_model), direction = "forward", k=2)
 ```
 
-According to the AIC Forward selection method, we should have all the 8 variables in the logistics model.
+According to the AIC Forward selection method, we should have the same 6 features as above for the logistics model.
 
 
 ## Forward selection on BIC:
 
 ```{r}
-fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
+# fwd_BIC_model <- step(full_model, direction = "forward", k=log(nrow(train_reg))) #k = log(n) is sometimes referred to as BIC or SBC.
+fwd_BIC_model <- step(null_model, scope = list(lower = null_model, upper = full_model), direction = "forward", k=log(nrow(train_reg)))
 ```
 
-From forward selection with BIC as criteria we are getting 8 features also. 
+From forward selection with BIC as criteria we are getting 5 features excluding the Income, CURRENT_JOB_YRS, and CURRENT_HOUSE_YRS.
+As, BIC is giving us less features we are taking this as final forward selection model.
+
+```{r}
+fwd_BIC_model <- glm(Risk_Flag ~ Experience + House_Ownership + Car_Ownership + Married.Single + Age, data = train_reg, family = "binomial")
+summary(fwd_BIC_model)
+```
+
 
 ### ROC- AUC - Forward selection model
 
 
 ```{r}
-prob_predictaic <- predict(full_model, test_reg, type='response')
+prob_predictaic <- predict(fwd_BIC_model, test_reg, type='response')
 test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
 fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
 auc(fwd_h)
@@ -345,7 +363,15 @@ fwd_cm
 fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
 ```
 
+Let's find out the exponential of coefficients for this model
 
+```{r, results='markup'}
+expcoeff_fk = exp(coef(fwd_BIC_model))
+# expcoeff
+xkabledply( as.table(expcoeff_fk), title = "Exponential of coefficients in Forward Logit Reg" )
+```
+
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_fk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[2])*100`%. if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_fk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[3])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_fk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[4])*100`%. Moving on to, if a customer owns a car then odds ratio to decrease by `r expcoeff_fk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[5])*100`%. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_fk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[6])*100`%. Finally, as age increases, we expect the odds ratio to decrease by `r expcoeff_fk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[7])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default.
 
 # Exhaustive Selection
 
@@ -357,60 +383,55 @@ We now look at Exhaustive Selection and check based on AIC and BIC criterion.
 X <- subset(train_reg, select = c(1:8) )
 y <- subset(train_reg, select = c(9) )
 Xy<-as.data.frame(cbind(X,y))
-riskexhaust_aic <- bestglm(Xy = train_reg, family = binomial, 
+riskexhaust_aic <- bestglm(Xy = train_reg, family = binomial,
                        IC = "AIC",method = "exhaustive")     
 summary(riskexhaust_aic)
 riskexhaust_aic$BestModels
 summary(riskexhaust_aic$BestModels)
 ```
 
-The above shows the top 5 Best Models. The top model has the AIC of 124973, where it includes all the variables.
+The above shows the top 5 Best Models. The top model has the AIC of 124466, where it includes all the variables.
 
 
-We now run the model with all features included:
+We now run the model with all the features included except `Income` and `CURRENT_HOUSE_YRS`
 
 ```{r}
-riskaic <- glm(Risk_Flag ~ Income + 
-                 Age + 
-                 Experience + 
-                 Married.Single + 
+riskaic <- glm(Risk_Flag ~ Age +
+                 Experience +
+                 Married.Single +
                  House_Ownership +
-                 Car_Ownership + 
+                 Car_Ownership +
                  CURRENT_JOB_YRS +
                  CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
 summary(riskaic)
 ```
-As we can see above, the p-value for `Income` is slightly over  $\alpha$=0.05 making it insignificant. All the other coefficients have statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
+As we see here, all the coefficients, `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership` and `CURRENT_JOB_YRS` are statistically significant, with low p-values.
 
-We run another model removing `Income` as it shows statistically insignificant.
-
-```{r}
-riskaic <- glm(Risk_Flag ~ Age + 
-                 Experience + 
-                 Married.Single + 
-                 House_Ownership +
-                 Car_Ownership + 
-                 CURRENT_JOB_YRS +
-                 CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
-summary(riskaic)
-```
 Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.    
 
 For every year increase in `Experience`, the log odds ratio of default reduces by 0.02.  
 
 Marital Status shows, for person being married vs single, the log odds of risk reduces by 0.23 when the person is married vs when they are single.
 
-The coefficients of Home Ownership show that a consumer owning a home reduces the log odds of a risk by 0.35, when compared with someone who is renting. The person who is neither renting or owning a home also reduces the log odds of risk by 0.32.
+The coefficients of Home Ownership show that a consumer owning a home reduces the log odds of a risk by 0.40, when compared with someone who is renting. The person who is neither renting or owning a home also reduces the log odds of risk by 0.32.
 
 Car ownership also reduces the log odds of a risk of default by 0.01.
 
-Another way to look at the above is by looking at the Odds-Ratio:  
+Another way to look at the above is by looking at the Odds-Ratio:
+
+```{r}
+expcoeff_exh = exp(coef(riskaic))
+# expcoeff
+xkabledply( as.table(expcoeff_exh), title = "Exponential of coefficients in Exhaustive Logit Reg" )
+
+```
+
 
 ```{r}
 ## odds ratios and 95% CI
 exp(cbind(OR = coef(riskaic), confint(riskaic)))
 ```
-We can see above, with every increase in Age, the log odds ratio of a customer defaulting changes by 0.996 (which is the same as what we looked earlier), and we have similar results for other features.
+We can see above, with every increase in Age, the log odds ratio of a customer defaulting changes by 0.996, and we have similar results for other features.
 
 
 ### Confusion Matrix
@@ -432,18 +453,17 @@ We will further check our model by running it on our test data. We will also cre
 #test_aic <- test[,2:7]
 #prob_predict <- predict(riskaic, type ='response', newdata = test_aic )
 prob_predict_aic <- predict(riskaic, test_reg, type = 'response')
-test_reg$predictedRisk_aic <- ifelse(prob_predict_aic > 0.15, 1, 0) 
+test_reg$predictedRisk_aic <- ifelse(prob_predict_aic > 0.15, 1, 0)
 # Comparing the Risk v Predicted Risk ratio
-table(test_reg$predictedRisk_aic) 
+table(test_reg$predictedRisk_aic)
 table(test_reg$Risk_Flag)
 confusionMatrix(as.factor(test_reg$predictedRisk_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
-The above Confusion Matrix shows us an Accuracy of 81% on the test set. Although a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 12%, and precision for them is only 15%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1277 accurately. It predicted 7201 customers who did not default as defaulted, and 8971 customers who actually defaulted as not defaulted.
-
+The above Confusion Matrix shows us an Accuracy of 81.9% on the test set. Although a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 10.34%, and precision to predict the defaulted customers is only 15.37%.
 
 ### Hoslem and Lemshow Test for AIC from exhaustive method
 
-The Hoslem and Lemshow Goodness of Fit test can be used to evaluate logistic regression fit. 
+The Hoslem and Lemshow Goodness of Fit test can be used to evaluate logistic regression fit.
 
 ```{r}
  # function hoslem.test( ) for logit model evaluation
@@ -454,7 +474,7 @@ The p-value `r riskaicHoslem$p.value` is well under the $\alpha$ at 0.05, this i
 
 ### Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC)
 
-Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC) measures the true positive rate (or sensitivity) against the false positive rate (or specificity). The area-under-curve is always between 0.5 and 1. Values higher than 0.8 is considered good model fit. 
+Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC) measures the true positive rate (or sensitivity) against the false positive rate (or specificity). The area-under-curve is always between 0.5 and 1. Values higher than 0.8 is considered good model fit.
 ```{r}
  # receiver operating characteristic curve, gives the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The curve is on sensitivity/recall/true-positive-rate vs false_alarm/false-positive-rate/fall-out.
 h_exh_aic <- roc(Risk_Flag ~ prob_predict_aic, data=test_reg)
@@ -479,45 +499,52 @@ We now look at the BIC with exhaustive method.
 
 ```{r}
 str(Xy)
-riskbestglm_bic <- bestglm(Xy = train_reg, family = binomial, 
-                       IC = "BIC", method = "exhaustive") 
+riskbestglm_bic <- bestglm(Xy = train_reg, family = binomial,
+                       IC = "BIC", method = "exhaustive")
 summary(riskbestglm_bic)
 riskbestglm_bic$BestModels
 summary(riskbestglm_bic$BestModels)
 ```
-Based on the above, we can see the Top 5 models. The top model has a BIC of 139651, which includes all the features except for `Income` and `CURRENT_HOUSE_YRS`
+Based on the above, we can see the Top 5 models. The top model has a BIC of 124534, which includes all the features except for `Income`, `CURRENT_HOUSE_YRS` and `CURRENT_JOB_YRS`
 
-We will now run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`. 
+We will now run a glm model based on the Best Model we got here, without including `Income`,`CURRENT_HOUSE_YRS`and `CURRENT_JOB_YRS`
 
 ```{r}
-riskbic <- glm(Risk_Flag ~ Age + 
-                 Experience + 
-                 Married.Single + 
+riskbic <- glm(Risk_Flag ~ Age +
+                 Experience +
+                 Married.Single +
                  House_Ownership +
-                 Car_Ownership +
-                 CURRENT_JOB_YRS, data = train_reg, family = "binomial")
+                 Car_Ownership, data = train_reg, family = "binomial")
 summary(riskbic)
 ```
+The baseline here is again, a customer who is Single, Renting and who does not own a car.
 
-We have a similar result here, except we have removed the Current Years in Home variable.
+We have a similar result here, a year in increase in `Age` reduces the log odds of ratio of default by 0.04.
 
-We will also check this model by running it on our test data (as we did earlier). 
+The customer who is married, reduces the log odds ratio of defaulting by 0.23 when compared to someone who is single.
+
+Also, a customer owning a home also reduces the log odds ratio of defaulting by 0.40. Car Ownership also reduces the log odds ratio of defaulting by a factor of 0.165.
+
+
+We will also check this model by running it on our test data (as we did earlier).
 
 ### Confusion Matrix
 ```{r}
 prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
-test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0) 
+test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0)
 # Comparing the Risk v Predicted Risk ratio
-table(test_reg$predictedRisk) 
+table(test_reg$predictedRisk)
 table(test_reg$Risk_Flag)
-confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm <- confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm
+exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
+exh_bic_accuracy
 ```
-As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 80.5% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 12%, and precision to predict the risk is only 14.30%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1229 accurately. It predicted 7366 customers who did not default as defaulted, and 9019 customers who actually defaulted as not defaulted. 
-
+As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 81.9% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 10.58%, and precision to predict the risk is slightly better than before at 15.57%.
 
 ### Hoslem and Lemshow Test with BIC from exhaustive method
 
-The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic regression fit. 
+The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic regression fit.
 
 ```{r}
  # function hoslem.test( ) for logit model evaluation
@@ -528,7 +555,7 @@ riskbicHoslem
 
 The p-value is again well under 0.05, implying all the features are significant in this model.
 
-### ROC/AUC 
+### ROC/AUC
 
 ```{r}
 h_exh_bic <- roc(Risk_Flag ~ prob_predict_bic, data=test_reg)
@@ -548,7 +575,7 @@ mcFadden_exh_bic
 ```
 
 
-# Decision Tree 
+# Decision Tree
 Model
 
 ```{r, results='markup'}
@@ -601,9 +628,9 @@ plot(dt_h)
 
 ## Feature Importance  
 df <- data.frame(imp = tune_fit$variable.importance)
-df2 <- df %>% 
-  tibble::rownames_to_column() %>% 
-  dplyr::rename("variable" = rowname) %>% 
+df2 <- df %>%
+  tibble::rownames_to_column() %>%
+  dplyr::rename("variable" = rowname) %>%
   dplyr::arrange(imp) %>%
   dplyr::mutate(variable = forcats::fct_inorder(variable))
 ggplot2::ggplot(df2) +
@@ -618,11 +645,12 @@ ggplot2::ggplot(df2) +
 ```{r}
 # library(caret)
 # varImp(tune_fit)
+plot(dt_h)
 ```
 
 Now the accuracy has increased and the model can predict defaulted cases as well, even though the precision isn't that satisfactory.
 
-# Random Forest 
+# Random Forest
 
 
 Model
@@ -638,9 +666,7 @@ xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
 # Accuracy
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
-
 plot(rf)
-
 test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
 rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
 auc(rf_h)
@@ -650,13 +676,13 @@ plot(rf_h)
 #confusionMatrix(predict_test,test_reg$Risk_Flag)
 #predict_test <- predict(rf,train_reg,type='response')
 #confusionMatrix(predict_test,train_reg$Risk_Flag)
-#t <- tuneRF(train_reg[,-9],train_reg[,9], 
+#t <- tuneRF(train_reg[,-9],train_reg[,9],
  #       stepFactor = 0.5,
 #        plot = TRUE,
 #        ntree_Try = 100,
 #        trace= TRUE,
 #       improve = 0.05)
-# 
+#
 varImpPlot(rf)
 
 
@@ -667,22 +693,22 @@ varImpPlot(rf)
 
 Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We used the training data to develop our models, so we'll now run each training model against our test dataset. We'll analyze the ROC_AUC and accuracy for each model, given that we already know each should produce low error as judged by AIC/BIC in our initial regression builds.
 
-The final model for manual logistic regression was: 
+The final model for manual logistic regression was:
 __Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single__
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(h_manual)` and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
-The final model for backwards selection was: __Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience__
+The final model for backwards selection was: __Risk_Flag ~ Age + Married.Single + Car_Ownership + House_Ownership + Experience__
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(bkwd_h)` and correctly predicted `r bkwd_cm$table[4:4]` defaulted accounts and `r bkwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r bkwd_accuracy` or `r bkwd_accuracy*100`%.
 
-The final model for forward selection was: __Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS__
+The final model for forward selection was: __Risk_Flag ~ Experience + House_Ownership + Car_Ownership +  Married.Single + Age__
 
 In developing this model with a 0.115 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(fwd_h)` and correctly predicted `r fwd_cm$table[4:4]` defaulted accounts and `r fwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r fwd_accuracy` or `r fwd_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
-The final model for exhaustive selection (optimized for AIC) was: **"Risk_Flag ~ Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS"**
+The final model for exhaustive selection (optimized for BIC) was: **"Risk_Flag ~ Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS"**
 
-In developing this model with a 0.15 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_aic)` and correctly predicted `r exh_aic_cm$table[4:4]` defaulted accounts and `r exh_aic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_aic_accuracy` or `r exh_aic_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
+In developing this model with a 0.15 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_bic)` and correctly predicted `r exh_bic_cm$table[4:4]` defaulted accounts and `r exh_bic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_bic_accuracy` or `r exh_bic_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
 Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
@@ -696,50 +722,49 @@ Let's now revisit our original questions and see what we've learned through our 
 First, we asked if income would be statistically significant in a model despite not being significant on it's own. Based on our various modeling, it appears that income still isn't useful, even when used in combination with other available variables. The only model that continued to use income was our model derived through forward selection. This is quite surprising since income is hugely significant for predicting loan default in the United States.  
 
 
-Based on our analysis, we were able to determine that current job experience and overall experience are individually useful in our models, but overall job experience is slightly more significant in our models. 
-	
+Based on our analysis, we were able to determine that current job experience and overall experience are individually useful in our models, but overall job experience is slightly more significant in our models.
+
 ```{r}
-expcoeff_exh_aic = exp(coef(riskaic))
+expcoeff_exh_bic = exp(coef(riskbic))
 # expcoeff
-xkabledply( as.table(expcoeff_exh_aic), title = "Exponential of coefficients in Exhaustive AIC Logit Reg" )
-(1-expcoeff_exh_aic[3])*100
+xkabledply( as.table(expcoeff_exh_bic), title = "Exponential of coefficients in Exhaustive BIC Logit Reg" )
 ```
 
-Since our decision tree model, which was the best, doesn't allow us to ascertain individual variable impacts, we'll instead use the best of our logistic regression models to assess the impact of an additional year of age on the likelihood of defaulting on a loan. For these purposes, we'll use our exhaustive selection AIC criteria model. For a one year increase in age, we would expect to see a decrease in the odds ratio of `r expcoeff_exh_aic[2]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_aic[2])*100`%. Likewise, we can see that an additional year of overall job experience decreases the odds ratio of defaulting by `r expcoeff_exh_aic[3]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_aic[3])*100`%.
+Since our decision tree model, which was the best, doesn't allow us to ascertain individual variable impacts, we'll instead use the best of our logistic regression models to assess the impact of an additional year of age on the likelihood of defaulting on a loan. For these purposes, we'll use our exhaustive selection BIC criteria model. For a one year increase in age, we would expect to see a decrease in the odds ratio of `r expcoeff_exh_bic[2]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_bic[2])*100`%. Likewise, we can see that an additional year of overall job experience decreases the odds ratio of defaulting by `r expcoeff_exh_bic[3]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_bic[3])*100`%.
 
 As we mentioned above, manual, exhaustive, forward, and backward model selection all produced models that were statistically significant, but practically useless. Instead, the model produced by our decision tree was the best model for our purposes. Likewise, our decision tree model is the only model that produced an ROC-AUC above the 0.8 AUC bar for usefulness.
 
 Pretty clearly we're able to see that the most significant predictors for default are job experience, age, marital status, home-ownership status, and car ownership status. Other variables were useful in individual models, but these were the most consistent across the models.
 
-	
-	
+
+
 ```{r}
 #Sensitivity (Recall Rate)
 manual_cm$byClass[1]
 bkwd_cm$byClass[1]
 fwd_cm$byClass[1]
-exh_aic_cm$byClass[1]
+exh_bic_cm$byClass[1]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])
 #Specficity
 manual_cm$byClass[2]
 bkwd_cm$byClass[2]
 fwd_cm$byClass[2]
-exh_aic_cm$byClass[2]
+exh_bic_cm$byClass[2]
 cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2])
 rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])
 #Precision
 manual_cm$byClass[5]
 bkwd_cm$byClass[5]
 fwd_cm$byClass[5]
-exh_aic_cm$byClass[5]
+exh_bic_cm$byClass[5]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])
 #Accuracy
 manual_accuracy
 bkwd_accuracy
 fwd_accuracy
-exh_aic_accuracy
+exh_bic_accuracy
 accuracy_tune(tune_fit)
 1-missing_classerr
 ```
