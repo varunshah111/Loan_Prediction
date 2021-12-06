@@ -50,19 +50,14 @@ loanpredict <- read.csv("Training Data.csv", header = TRUE)
 str(loanpredict)
 #Convert necessary variables to factors/categoricals and set appropriate level titles
 loanpredict$Married.Single <- recode_factor(loanpredict$Married.Single, single = "Single", married = "Married")
-
 loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented = "Renting", owned = "Owning", norent_noown = "Neither")
-
 loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
-
 #Remove variables that won't help in our analysis
 loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
-
 #Create summary table of remaining variables
 xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
 #Selecting only values where the customer defaulted
 defaulted <- subset(loandata, Risk_Flag == 1)
-
 #Selecting only values where the customer did not default
 not_defaulted <- subset(loandata, Risk_Flag == 0)
 ```
@@ -73,16 +68,13 @@ not_defaulted <- subset(loandata, Risk_Flag == 0)
 Before we get into any of the analysis, let's create a training dataset and a test dataset so that we can better understand how good our models will be in the future and not just on the data upon which they're built.
 
 ```{r}
-
 loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
-
 set.seed(123)
 split <- sample.split(loandata, SplitRatio = 0.75)
 # split
    
 train_reg <- subset(loandata, split == "TRUE")
 test_reg <- subset(loandata, split == "FALSE")
-
 ```
 
 
@@ -234,10 +226,6 @@ expcoeff[2]
 
 In these interpretations, these odds ratio changes are true on average when holding all other variables constant in the model.
 
-```{r}
-library(caTools)
-
-loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 
 For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experiencec lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
 
@@ -257,10 +245,8 @@ Now that we've developed a model manually that's statistically significant, but 
 ```{r}
 # Specify a null model with no predictors
 null_model <- glm(Risk_Flag ~ 1, data = train_reg, family = "binomial")
-
 # Specify the full model using all of the potential predictors
 full_model <- glm(Risk_Flag ~ ., data = train_reg, family = "binomial")
-
 # Use a backward stepwise algorithm on AIC to build a parsimonious model
 bkwrd_AIC_model_vars <- step(full_model, scope = list(lower = null_model, upper = full_model), direction = "backward", k=2)
 ```
@@ -283,17 +269,8 @@ As BIC is giving us less features we can consider this as the final model with b
 
 
 ```{r}
-
 bkwd_bic_model <- glm(Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
 summary(bkwd_bic_model)
-
-```
-
-
-```{r}
-# library(car)
-# xkablevif(bkwd_bic_model, wide=FALSE)
-# vif(bkwd_bic_model) 
 ```
 
 
@@ -306,15 +283,11 @@ summary(bkwd_bic_model)
 # h <- roc(Risk_Flag ~ prob1, data = train_reg)
 # auc(h)
 # plot(h)
-
 prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
-
 test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
-
 bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
 auc(bkwd_h)
 plot(bkwd_h)
-
 # comparing the ratio
 table(test_reg$prob_bic)
 table(test_reg$Risk_Flag)
@@ -324,10 +297,9 @@ table(test_reg$Risk_Flag)
 
 
 ```{r, results='markup'}
-
-bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(bkwd_cm$table)
-
+bkwd_cm
 bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
 ```
 
@@ -338,9 +310,7 @@ bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkw
 
 
 ```{r}
-
 foward_aic_model <- step(full_model, direction = "forward", k=2) # k=2 refers to AIC 
-
 ```
 
 According to the AIC Forward selection method, we should have all the 8 variables in the logistics model.
@@ -359,13 +329,10 @@ From forward selection with BIC as criteria we are getting 8 features also.
 
 ```{r}
 prob_predictaic <- predict(full_model, test_reg, type='response')
-
 test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
-
 fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
 auc(fwd_h)
 plot(fwd_h)
-
 # comparing the ratio
 table(test_reg$prob_aic)
 table(test_reg$Risk_Flag)
@@ -375,9 +342,9 @@ table(test_reg$Risk_Flag)
 
 
 ```{r, results='markup'}
-fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(fwd_cm$table)
-
+fwd_cm
 fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
 ```
 
@@ -390,20 +357,14 @@ fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$
 We now look at Exhaustive Selection and check based on AIC and BIC criterion.
 
 ```{r}
-
-
 X <- subset(train_reg, select = c(1:8) )
 y <- subset(train_reg, select = c(9) )
-
 Xy<-as.data.frame(cbind(X,y))
-
 riskexhaust_aic <- bestglm(Xy = train_reg, family = binomial, 
                        IC = "AIC",method = "exhaustive")     
-
 summary(riskexhaust_aic)
 riskexhaust_aic$BestModels
 summary(riskexhaust_aic$BestModels)
-
 ```
 
 The above shows the top 5 Best Models. The top model has the AIC of 124973, where it includes all the variables.
@@ -420,7 +381,6 @@ riskaic <- glm(Risk_Flag ~ Income +
                  Car_Ownership + 
                  CURRENT_JOB_YRS +
                  CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
-
 summary(riskaic)
 ```
 As we can see above, the p-value for `Income` is slightly over  $\alpha$=0.05 making it insignificant. All the other coefficients have statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
@@ -435,7 +395,6 @@ riskaic <- glm(Risk_Flag ~ Age +
                  Car_Ownership + 
                  CURRENT_JOB_YRS +
                  CURRENT_HOUSE_YRS, data = train_reg, family = "binomial")
-
 summary(riskaic)
 ```
 Here, it shows for every increase in `Age` by 1 year, the log odds of a risk reduces by 0.004.    
@@ -456,28 +415,15 @@ exp(cbind(OR = coef(riskaic), confint(riskaic)))
 ```
 We can see above, with every increase in Age, the log odds ratio of a customer defaulting changes by 0.996 (which is the same as what we looked earlier), and we have similar results for other features.
 
-```{r, results='hide'}
-plot(tune_fit)
-# text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
-```
-```{r}
-# library(caret)
-# varImp(tune_fit)
-```
-
-Now the accuracy has increased and the model can predict defaulted cases as well, even though the precision isn't that satisfactory.
 
 ### Confusion Matrix
 ```{r}
 prob_predict_exh_aic <- predict(riskaic, test_reg, type='response')
-
 test_reg$prob_exh_aic <- ifelse(prob_predict_exh_aic > 0.15,1,0)
-
-exh_aic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+exh_aic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(exh_aic_cm$table)
-
+exh_aic_cm
 exh_aic_accuracy <- (exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1])/(exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1]+exh_aic_cm$table[2:2]+exh_aic_cm$table[3:3])
-
 ```
 The confusion matrix above shows us the predicted value for Defaulted as 0 based on our training model. This could be because of the class being heavily unbalanced, which makes sense because the customers defaulting a loan is a very small percentage compared to the customers who do not default.
 
@@ -488,17 +434,11 @@ We will further check our model by running it on our test data. We will also cre
 #str(test_reg)
 #test_aic <- test[,2:7]
 #prob_predict <- predict(riskaic, type ='response', newdata = test_aic )
-
 prob_predict_aic <- predict(riskaic, test_reg, type = 'response')
-
-
 test_reg$predictedRisk_aic <- ifelse(prob_predict_aic > 0.15, 1, 0) 
-
-
 # Comparing the Risk v Predicted Risk ratio
 table(test_reg$predictedRisk_aic) 
 table(test_reg$Risk_Flag)
-
 confusionMatrix(as.factor(test_reg$predictedRisk_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
 The above Confusion Matrix shows us an Accuracy of 81% on the test set. Although a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 12%, and precision for them is only 15%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1277 accurately. It predicted 7201 customers who did not default as defaulted, and 8971 customers who actually defaulted as not defaulted.
@@ -511,8 +451,6 @@ The Hoslem and Lemshow Goodness of Fit test can be used to evaluate logistic reg
 ```{r}
  # function hoslem.test( ) for logit model evaluation
 riskaicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskaic)) # Hosmer and Lemshow test, a chi-squared test
-
-
 riskaicHoslem
 ```
 The p-value `r riskaicHoslem$p.value` is well under the $\alpha$ at 0.05, this indicates that the model is a good fit.   
@@ -522,7 +460,6 @@ The p-value `r riskaicHoslem$p.value` is well under the $\alpha$ at 0.05, this i
 Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC) measures the true positive rate (or sensitivity) against the false positive rate (or specificity). The area-under-curve is always between 0.5 and 1. Values higher than 0.8 is considered good model fit. 
 ```{r}
  # receiver operating characteristic curve, gives the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The curve is on sensitivity/recall/true-positive-rate vs false_alarm/false-positive-rate/fall-out.
-
 h_exh_aic <- roc(Risk_Flag ~ prob_predict_aic, data=test_reg)
 auc(h_exh_aic) # area-under-curve prefer 0.8 or higher.
 plot(h_exh_aic)
@@ -537,8 +474,6 @@ McFadden is another evaluation tool we can use on logit regressions. This is par
 RiskNullLogit_exh <- glm(Risk_Flag ~ 1, data = train_reg, family = "binomial")
 mcFadden_exh_aic = 1 - logLik(riskaic)/logLik(RiskNullLogit_exh)
 mcFadden_exh_aic
-
-
 ```
 We now look at the BIC with exhaustive method.
 
@@ -547,30 +482,13 @@ We now look at the BIC with exhaustive method.
 
 ```{r}
 str(Xy)
-
-
 riskbestglm_bic <- bestglm(Xy = train_reg, family = binomial, 
                        IC = "BIC", method = "exhaustive") 
-
 summary(riskbestglm_bic)
 riskbestglm_bic$BestModels
 summary(riskbestglm_bic$BestModels)
-
 ```
 Based on the above, we can see the Top 5 models. The top model has a BIC of 139651, which includes all the features except for `Income` and `CURRENT_HOUSE_YRS`
-
- 
-### Confusion Matrix
-```{r}
-prob_predict_exh_bic <- predict(riskbic, test_reg, type='response')
-
-test_reg$prob_exh_bic <- ifelse(prob_predict_exh_bic > 0.15,1,0)
-
-exh_bic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
-xkabledply(exh_bic_cm$table)
-
-exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
-```
 
 We will now run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`. 
 
@@ -581,7 +499,6 @@ riskbic <- glm(Risk_Flag ~ Age +
                  House_Ownership +
                  Car_Ownership +
                  CURRENT_JOB_YRS, data = train_reg, family = "binomial")
-
 summary(riskbic)
 ```
 
@@ -589,16 +506,13 @@ We have a similar result here, except we have removed the Current Years in Home 
 
 We will also check this model by running it on our test data (as we did earlier). 
 
+### Confusion Matrix
 ```{r}
 prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
-
-
 test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0) 
-
 # Comparing the Risk v Predicted Risk ratio
 table(test_reg$predictedRisk) 
 table(test_reg$Risk_Flag)
-
 confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
 As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 80.5% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 12%, and precision to predict the risk is only 14.30%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1229 accurately. It predicted 7366 customers who did not default as defaulted, and 9019 customers who actually defaulted as not defaulted. 
@@ -611,8 +525,6 @@ The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic re
 ```{r}
  # function hoslem.test( ) for logit model evaluation
 riskbicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskbic)) # Hosmer and Lemeshow test, a chi-squared test
-
-
 riskbicHoslem
 ```
 
@@ -634,7 +546,6 @@ We have here the area-under-curve of `r auc(h_exh_bic)`, also less than 0.8 indi
 McFadden is another evaluation tool we can use on logit regressions. This is part of what is called pseudo-R-squared values for evaluation tests. We can calculate the value directly from its definition if we so choose to.
 
 ```{r McFadden_exhaust_bic}
-
 mcFadden_exh_bic = 1 - logLik(riskbic)/logLik(RiskNullLogit_exh)
 mcFadden_exh_bic
 ```
@@ -644,8 +555,6 @@ mcFadden_exh_bic
 Model
 
 ```{r, results='markup'}
-
-
 dt <- rpart(Risk_Flag ~ ., data = train_reg, method= "class")
 # predicting in test set
 predict_dt_test <- predict(dt, test_reg, type = 'class')
@@ -655,8 +564,6 @@ xkabledply( cmdt, title = "Confusion matrix from Decision Tree" )
 # Accuracy
 acc_dt <-  sum(diag(cmdt)) / sum(cmdt)
 print(paste('Decision Tree Accuracy =', acc_dt))
-
-
 # plot(dt)
 ```
 
@@ -664,23 +571,18 @@ As making the decision tree with default conditions couldn't predict properly, w
 
 
 ```{r, results='markup'}
-
 accuracy_tune <- function(fit) {
     predict_unseen <- predict(fit, test_reg, type = 'class')
     table_mat <- table(test_reg$Risk_Flag, predict_unseen)
     accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
     accuracy_Test
 }
-
 control <- rpart.control(minsplit = 3,
     minbucket = round(4 / 3),
     maxdepth = 30,
     cp = 0)
-
 tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
 accuracy_tune(tune_fit)
-
-
 #confusion matrix  
 predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
 cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
@@ -690,11 +592,9 @@ xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
 ```{r, results='hide'}
 plot(tune_fit)
 # text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
-
 #ROC-AUC Calculation for Decision Tree
 pred <- predict(tune_fit, newdata=test_reg)
 test_reg$prob_dt <- ifelse(pred[,1] > 0.855,0,1)
-
 dt_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
 auc(dt_h)
 plot(dt_h)
@@ -713,9 +613,6 @@ Model
 
 ```{r, results='markup'}
 #install.packages("randomForest")
-
-
-
 rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
 # predicting in test set
 predict_test <- predict(rf, test_reg, type = 'response')
@@ -725,9 +622,7 @@ xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
 # Accuracy
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
-
 plot(rf)
-
 test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
 rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
 auc(rf_h)
@@ -735,22 +630,20 @@ plot(rf_h)
 ```
 
 
-
-
-#"Best" Model Comparisons
+# "Best" Model Comparisons
 
 Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We used the training data to develop our models, so we'll now run each training model against our test dataset. We'll analyze the ROC_AUC and accuracy for each model, given that we already know each should produce low error as judged by AIC/BIC in our initial regression builds.
 
 The final model for manual logistic regression was: 
-**"Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single"**
+__Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single__
 
-In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(manual_cm)` and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
+In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(h_manual)` and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
-The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
+The final model for backwards selection was: __Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience__
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(bkwd_h)` and correctly predicted `r bkwd_cm$table[4:4]` defaulted accounts and `r bkwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r bkwd_accuracy` or `r bkwd_accuracy*100`%.
 
-The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS"**
+The final model for forward selection was: __Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS__
 
 In developing this model with a 0.115 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(fwd_h)` and correctly predicted `r fwd_cm$table[4:4]` defaulted accounts and `r fwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r fwd_accuracy` or `r fwd_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
@@ -764,7 +657,7 @@ In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a
 
 Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(rf_h)` and correctly predicted `r rf_cm[4:4]` defaulted accounts and `r rf_cm[1:1]` non-defaulted accounts for a total accuracy of `r 1-missing_classerr` or `r (1-missing_classerr)*100`%. This model once again dips below our desired AUC-ROC threshold, so is not a useful model.
 
-# Conclusion and answers to questions plus overview of our final model in terms of expected likelihood changes for differences in our variables
+# Answering our SMART Questions
 
 Let's now revisit our original questions and see what we've learned through our modeling:  
 First, we asked if income would be statistically significant in a model despite not being significant on it's own. Based on our various modeling, it appears that income still isn't useful, even when used in combination with other available variables. The only model that continued to use income was our model derived through forward selection. This is quite surprising since income is hugely significant for predicting loan default in the United States.  
@@ -788,7 +681,6 @@ fwd_cm$byClass[1]
 exh_aic_cm$byClass[1]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])
-
 #Specficity
 manual_cm$byClass[2]
 bkwd_cm$byClass[2]
@@ -796,8 +688,6 @@ fwd_cm$byClass[2]
 exh_aic_cm$byClass[2]
 cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2])
 rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])
-
-
 #Precision
 manual_cm$byClass[5]
 bkwd_cm$byClass[5]
@@ -805,7 +695,6 @@ fwd_cm$byClass[5]
 exh_aic_cm$byClass[5]
 cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2])
 rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])
-
 #Accuracy
 manual_accuracy
 bkwd_accuracy
@@ -821,6 +710,3 @@ Lastly, in terms of accuracy,  our decision tree model was the most accurate at 
 
 
 Based on this analysis, we can determine that our best model is likely our INSERT MODEL HERE
-
-	
-	
