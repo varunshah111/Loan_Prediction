@@ -612,7 +612,7 @@ cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
 xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
 ```
 
-```{r, results='hide'}
+```{r, results='markup'}
 plot(tune_fit)
 # text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
 #ROC-AUC Calculation for Decision Tree
@@ -620,11 +620,12 @@ pred <- predict(tune_fit, newdata=test_reg)
 test_reg$prob_dt <- ifelse(pred[,1] > 0.855,0,1)
 dt_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
 auc(dt_h)
-plot(dt_h)
+
 ```
 ```{r}
 # library(caret)
 # varImp(tune_fit)
+plot(dt_h)
 ```
 
 Now the accuracy has increased and the model can predict defaulted cases as well, even though the precision isn't that satisfactory.
@@ -662,11 +663,11 @@ __Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Car_Ownershi
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(h_manual)` and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
-The final model for backwards selection was: __Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience__
+The final model for backwards selection was: __Risk_Flag ~ Age + Married.Single + Car_Ownership + House_Ownership + Experience__
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(bkwd_h)` and correctly predicted `r bkwd_cm$table[4:4]` defaulted accounts and `r bkwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r bkwd_accuracy` or `r bkwd_accuracy*100`%.
 
-The final model for forward selection was: __Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS__
+The final model for forward selection was: __Risk_Flag ~ Experience + House_Ownership + Car_Ownership +  Married.Single + Age__
 
 In developing this model with a 0.115 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(fwd_h)` and correctly predicted `r fwd_cm$table[4:4]` defaulted accounts and `r fwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r fwd_accuracy` or `r fwd_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
