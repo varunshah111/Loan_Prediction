@@ -314,8 +314,10 @@ table(test_reg$Risk_Flag)
 
 ```{r, results='markup'}
 
-bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(bkwd_cm$table)
+
+bkwd_cm
 
 bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
 ```
@@ -364,8 +366,10 @@ table(test_reg$Risk_Flag)
 
 
 ```{r, results='markup'}
-fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(fwd_cm$table)
+
+fwd_cm
 
 fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
 ```
@@ -452,8 +456,10 @@ prob_predict_exh_aic <- predict(riskaic, test_reg, type='response')
 
 test_reg$prob_exh_aic <- ifelse(prob_predict_exh_aic > 0.15,1,0)
 
-exh_aic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+exh_aic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(exh_aic_cm$table)
+
+exh_aic_cm
 
 exh_aic_accuracy <- (exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1])/(exh_aic_cm$table[4:4]+exh_aic_cm$table[1:1]+exh_aic_cm$table[2:2]+exh_aic_cm$table[3:3])
 
