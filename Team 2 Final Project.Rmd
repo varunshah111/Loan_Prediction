@@ -601,8 +601,8 @@ accuracy_tune <- function(fit) {
     accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
     accuracy_Test
 }
-control <- rpart.control(minsplit = 3,
-    minbucket = round(4 / 3),
+control <- rpart.control(minsplit = 4,
+    minbucket = 2,
     maxdepth = 30,
     cp = 0)
 tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
