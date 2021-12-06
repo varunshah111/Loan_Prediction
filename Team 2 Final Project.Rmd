@@ -25,6 +25,16 @@ library(ezids)
 library(dplyr)
 library(lmtest)
 library(vcd)
+library(bestglm)
+library(caTools)
+library(car)
+library(pROC)
+library(caret)
+library(regclass)
+library(ResourceSelection)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
 # knitr::opts_chunk$set(warning = F, results = "markup", message = F)
 knitr::opts_chunk$set(warning = F, results = "hide", message = F)
 options(scientific=T, digits = 3) 
@@ -57,6 +67,25 @@ defaulted <- subset(loandata, Risk_Flag == 1)
 not_defaulted <- subset(loandata, Risk_Flag == 0)
 ```
 
+
+### Splitting the dataset to Train 75% & Test 25%
+
+Before we get into any of the analysis, let's create a training dataset and a test dataset so that we can better understand how good our models will be in the future and not just on the data upon which they're built.
+
+```{r}
+
+loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+
+
+split <- sample.split(loandata, SplitRatio = 0.75)
+# split
+   
+train_reg <- subset(loandata, split == "TRUE")
+test_reg <- subset(loandata, split == "FALSE")
+
+```
+
+
 In our previous report, we conducted some exploratory data analysis (EDA) and determined that there were significant differences between those who defaulted on their loans and those who didn't in terms of home-ownership status, marital status, years of home-ownership, job experience, years of experience in current job, and age. Notably, we did not see a significant difference in income levels between the two populations.
 
 Having completed this EDA, we now want to develop a model to predict the likelihood of default status based on these variables provided at the time of the loan application. If we were a bank, this would allow us to predict who we should and shouldn't approve for loans.
@@ -66,7 +95,7 @@ Once again, we've developed some questions to help guide us in the model develop
 	• Does current job experience or overall job experience yield a better model?
 	• For each additional year, how does age impact likelihood of defaulting on a loan?
 	• For each additional year, how does job experience (whichever version was deemed more significant before) impact likelihood of defaulting on a loan?
-	• Does manual, exhaustive stepwise, or other modelling techniques produce a better model using the different methods (AIC, BIC, pseudo-R^2 etc.)
+	• Does manual, exhaustive stepwise, or other modeling techniques produce a better model using the different methods (AIC, BIC, pseudo-R^2 etc.)
 	• Does each method for model selection produce a significant model as determined by ROC-AUC >= 0.8, and if so, which produces the best? Does it agree with what we said before?
 	• What are the most significant predictors for default, and do they appear across all of the "best" models?
 	• Using a confusion matrix, which of our "best" models appears to perform best across the different metrics we care about (precision, recall-rate, etc.)
@@ -87,14 +116,14 @@ As mentioned earlier, we know that the following variables are significant betwe
 We'll go ahead and start developing our logistic regression model based on background knowledge. We'll first try running our model with only years of overall job experience as a predictor. Note: all variable significance will be run against $\alpha$ = 0.05
 
 ```{r}
-only_exp <- glm(Risk_Flag ~ CURRENT_JOB_YRS, data = loandata, family = 'binomial')
+only_exp <- glm(Risk_Flag ~ CURRENT_JOB_YRS, data = train_reg, family = 'binomial')
 summary(only_exp)
 ```
 
 We can see here that our current_job_yrs, as expected, is highly significant with a p-value of <0.001. However, we already know that years in current job is highly correlated with overall years of job experience. Before proceeding with our current model, we should run this model using overall years of job experience to determine which is a better predictor in a single variable model.
 
 ```{r}
-overall_exp <- glm(Risk_Flag ~ Experience, data = loandata, family = 'binomial')
+overall_exp <- glm(Risk_Flag ~ Experience, data = train_reg, family = 'binomial')
 summary(overall_exp)
 ```
 
@@ -103,44 +132,43 @@ When we build our model with overall years of job experience, we once again get 
 Now, let's try adding in a second variable. Let's try home_ownership status to determine if that has an effect when combined with overall years of job experience.
 
 ```{r}
-house_job_exp <- glm(Risk_Flag ~ Experience + House_Ownership, data = loandata, family = 'binomial')
+house_job_exp <- glm(Risk_Flag ~ Experience + House_Ownership, data = train_reg, family = 'binomial')
 summary(house_job_exp)
 ```
 
 Once again, all of our variables are significant in our model, which is to be expected. Let's also consider adding in an interaction variable.
 
 ```{r}
-house_job_exp_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Experience:House_Ownership, data = loandata, family = 'binomial')
+house_job_exp_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Experience:House_Ownership, data = train_reg, family = 'binomial')
 summary(house_job_exp_inter)
 ```
 
 Here, we see that our interaction terms are exceptionally insignificant, so we will remove those as we continue developing our model. Now, let's try adding in a third variable. Let's try adding in years in current house. If it is determined to be significant, we will check VIF afterwards to ensure we aren't having multicollinearity issues with the two housing variables.
 
 ```{r}
-house_job_exp_house <- glm(Risk_Flag ~ Experience + House_Ownership + CURRENT_HOUSE_YRS, data = loandata, family = 'binomial')
+house_job_exp_house <- glm(Risk_Flag ~ Experience + House_Ownership + CURRENT_HOUSE_YRS, data = train_reg, family = 'binomial')
 summary(house_job_exp_house)
 ```
 
 Years in current housing is insignificant in our model when we already know overall job experience and house ownership status. This means that owning a house is more important than how long you've owned it for. Let's try removing this variable and instead adding in age, our last variable we know for sure is significantly different between those who do and don't default on their loans. Again, if it's significant we'll go ahead and run a VIF analysis to confirm there's no multicollinearity with overall years of job experience.
 
 ```{r}
-house_job_exp_age <- glm(Risk_Flag ~ Experience + House_Ownership + Age, data = loandata, family = 'binomial')
+house_job_exp_age <- glm(Risk_Flag ~ Experience + House_Ownership + Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age)
-library(car)
 vif(house_job_exp_age)
 ```
 
 Fortunately for us, age is a significant variable with a p-value <0.001. Checking the VIF values, we see that they're all low, so we can include age in our model without multicollinearity concerns. As before, let's try adding in an interaction term to see how it behaves. We'll also retry the interaction term between job experience and house ownership to see if that term is significant when age is accounted for.
 
 ```{r}
-house_job_exp_age_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Experience:House_Ownership + Experience:Age + House_Ownership:Age, data = loandata, family = 'binomial')
+house_job_exp_age_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Experience:House_Ownership + Experience:Age + House_Ownership:Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_inter)
 ```
 
 Looking at our model outputs, we see that all of our non-interaction variables are still significant. Additionally, we see that the interaction between job experience and age is significant, as well as the interaction between home ownership (Neither) and age is significant. Notably, the interaction between job experience and home ownership is still not significant and the interaction between home ownership (Owning) and age is not significant. However, since one of the two home ownership categorical variables is significant with age, we'll keep both in the model.
 
 ```{r}
-house_job_exp_age_limit_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age +  Experience:Age + House_Ownership:Age, data = loandata, family = 'binomial')
+house_job_exp_age_limit_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age +  Experience:Age + House_Ownership:Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_inter)
 ```
 
@@ -148,14 +176,14 @@ As expected, when we rerun the model without the insignificant job experience an
 
 Now, let's try adding in marital status, our final variable we know has significance on it's own.
 ```{r}
-house_job_exp_age_limit_marital <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age, data = loandata, family = 'binomial')
+house_job_exp_age_limit_marital <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital)
 ```
 
 We see here that marital status is significant in our model with a p-value <0.001.
 
 ```{r}
-house_job_exp_age_limit_marital_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single, data = loandata, family = 'binomial')
+house_job_exp_age_limit_marital_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_inter)
 ```
 Examining a model with the interaction terms, the interaction of home ownership and marriage status is significant for the combination of owning a home and married relative to the base value of Renting and Single.
@@ -163,60 +191,59 @@ Examining a model with the interaction terms, the interaction of home ownership 
 Now, let's see what happens if we add income into our model. From our EDA we found that income was not significantly different between those who defaulted on their loans and those who didn't. However, we're curious to see if income is a significant variable when we are already considering job experience, home ownership status, age, and the combinations of home ownership and age plus job experience and age.
 
 ```{r}
-house_job_exp_age_limit_marital_income <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = loandata, family = 'binomial')
+house_job_exp_age_limit_marital_income <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_income)
 ```
 
 Based on our model outputs, income doesn't provide added value when we already know the information from our previous model. Based on our EDA, this is expected, but based on how important income is as a risk splitter in the United States, this is quite surprising that income remains so insignificant as a predictor.
 
-Finally, let's see what happens if we add in car ownership to our model.
+Finally, let's see what happens if we add in car ownership to our model and remove income.
 ```{r}
-house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = loandata, family = 'binomial')
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_income_car)
 ```
 
 When we add in car ownership, we see that income becomes insignificant, while everything else remains significant. This means that knowing an individuals income or car ownership status is significant, but not both when we already know this other information. If we examine our AIC values, we see that when our model uses income, we have an AIC of `r house_job_exp_age_limit_marital_income$aic`, while our model that uses car ownership has an AIC of `r house_job_exp_age_limit_marital_income_car$aic`. Therefore, if we use AIC as our criteria of "goodness", then our model using car ownership is the better model.
 
-Now that we've determined this is our "best" model using manual regression techniques, let's do some analysis about how good this model actually is.
+Now that we've determined this is our "best" model using manual regression techniques, let's do some analysis about how good this model actually is using our test data est.
 
 ```{r}
-library('pROC')
-prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, loandata, type='response')
-loandata$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
-sum(loandata$prob_manual==1)
-sum(loandata$Risk_Flag==1)
-h_manual <- roc(Risk_Flag ~ prob_manual, data = loandata)
+prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, test_reg, type='response')
+test_reg$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
+h_manual <- roc(Risk_Flag ~ prob_manual, data = test_reg)
 auc(h_manual)
 plot(h_manual)
 ```
 
-If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the right accounts as those who will default.
+If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the truly defaulting accounts as those who will default.
 
 ```{r}
-library(caret)
-manual_cm <- confusionMatrix(as.factor(loandata$prob_manual), as.factor(loandata$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
 xkabledply(manual_cm$table)
 manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
 ```
 
-
-Now that we've developed a model manually that's statistically significant, but practically useless, let's see what happens if we use algorithms to try and build a good model.
-
-### Splitting the dataset to Train 75% & Test 25%
+All that being said, let's still do some interpretation of our coefficients, to understand the impacts of our variables on the likelihood of defaulting. Given that we have some interaction terms (ratio of ratios), the interpretation may be a bit tricky for some of our variables, but that's ok.
 
 ```{r}
-library(caTools)
-
-loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
-
-
-split <- sample.split(loandata, SplitRatio = 0.75)
-# split
-   
-train_reg <- subset(loandata, split == "TRUE")
-test_reg <- subset(loandata, split == "FALSE")
-
+expcoeff = exp(coef(house_job_exp_age_limit_marital_income_car))
+# expcoeff
+xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Logit Reg" )
+expcoeff[2]
 ```
+
+In these interpretations, these odds ratio changes are true on average when holding all other variables constant in the model.
+
+
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experiencec lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
+
+For each additional year older someone is, we expect the odds ratio to decrease by `r expcoeff[5]` which corresponds to a decrease in default odds of `r (1-expcoeff[5])*100`%. This makes sense because of similar logic as experience. Going from single to married also decreases the odds ratio by `r expcoeff[6]` which corresponds to a decrease in default odds of `r (1-expcoeff[6])*100`%. The most likely explanation here is that going from single to married means that there are two incomes involved in paying off a loan or that the types of loans taken by married individuals are lower valued and get paid back more frequently. We don't have these variables in our model, unfortunately, so for now they remain speculation. Lastly, for our non-interaction terms, we see that going from not owning a car to owning a car shows an odds ratio decrease of `r expcoeff[7]` which corresponds to a decrease in default odds of `r (1-expcoeff[7])*100`%.
+
+Now, let's examine our interaction variables, which in a logistic regression correspond to a ratio of odds ratios. We're going to interpret these a little bit more loosely than our individual coefficients. The interaction between age an experience has a coefficient of `r expcoeff[8]` This means that age and experience move together and that as an individual stays equally experienced and old, their odds of defaulting hold steady, but if these move in opposite directions, then we'd start to see some change in likelihood of defaulting. For owning a home and age, our likelihood is approximately 1 again, where the older an individual is, the more impactful it is to start owning a home in terms of decreasing odds of default. Likewise, to move from renting to neither, the older an individual is, the likelier it is that they will default relative to a younger individual doing the same thing.
+
+Finally, moving from renting and single, or renting and married, or single to owning a home and being married, increases the odds ratio by `r expcoeff[11]` which corresponds to an increase in default odds of `r (expcoeff[11]-1)*100`%. One theory for why this may occur is that both owning a home and marriage are big commitments both in life and financially. As a result, it may be that taking on this much commitment at once, puts financial stress on the individual, and therefore increases the odds they default. However, moving from renting and single, or renting and married, or single to neither owning a home nor renting plus being married decreases the odds ratio by `r expcoeff[12]` which corresponds to a decrease in default odds of `r (1-expcoeff[12])*100`%.
+
+Now that we've developed a model manually that's statistically significant, but practically useless, let's see what happens if we use algorithms to try and build the model.
 
 # Backwards Selection
 
@@ -270,7 +297,6 @@ summary(bkwd_bic_model)
 ## ROC- AUC - Backward Selection Model
 
 ```{r}
-loadPkg('pROC')
 # prob1 = predict(bkwd_bic_model,type = 'response') ## foward selection results = bkwd_bic_model_model 
 # train_reg$prob1 = prob1
 # h <- roc(Risk_Flag ~ prob1, data = train_reg)
@@ -326,15 +352,6 @@ From forward selection with BIC as criteria we are getting 8 features also.
 
 ## ROC- AUC - Forward selection model
 
-```{r}
-# loadPkg('pROC')
-#prob = predict(full_model,type = 'response') ## foward selection results = full_model #loandata$prob = prob
-#h <- roc(Risk_Flag ~ prob, data = loandata)
-# auc(fwd_h)
-# plot(fwd_h)
-
-```
-
 
 ```{r}
 prob_predictaic <- predict(full_model, test_reg, type='response')
@@ -354,10 +371,6 @@ table(test_reg$Risk_Flag)
 
 
 ```{r, results='markup'}
-# library(caret)
-# confusionMatrix(as.factor(ifelse(loandata$prob >0.15,0,1)), as.factor(loandata$Risk_Flag))
-
-library(caret)
 fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
 xkabledply(fwd_cm$table)
 
@@ -368,12 +381,12 @@ fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$
 
 # Exhaustive Selection
 
-## Exhausting Selection - AIC
+## Exhaustive Selection - AIC
 
 We now look at Exhaustive Selection and check based on AIC and BIC criterion.
 
 ```{r}
-loadPkg("bestglm")
+
 
 X <- subset(train_reg, select = c(1:8) )
 y <- subset(train_reg, select = c(9) )
@@ -408,7 +421,7 @@ riskaic <- glm(Risk_Flag ~ Income +
 
 summary(riskaic)
 ```
-As we can see above, the p-value for `Income` is slightly over the $\alpha$ making it insignificant. All the other coefficients are found statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
+As we can see above, the p-value for `Income` is slightly over  $\alpha$=0.05 making it insignificant. All the other coefficients have statistically significant with low p-values. `Age`, `Experience`, `Marital.Status`, `House_Ownership`,`Car_Ownership`,`CURRENT_JOB_YRS` and `CURRENT_HOUSE_YRS`.  
 
 We run another model removing `Income` as it is statistically insignificant.
 
@@ -444,17 +457,15 @@ We can see above, with every increase in Age, the log odds ratio of a customer d
 
 ### Confusion Matrix
 ```{r}
-loadPkg("regclass")
-confusion_matrix(riskbestglm$BestModel)
-unloadPkg("regclass")
+confusion_matrix(riskexhaust_aic$BestModel)
 ```
 The confusion matrix above shows us the predicted value for Defaulted as 0 based on our training model. This could be because of the class being heavily unbalanced, which makes sense because the customers defaulting a loan is a very small percentage compared to the customers who do not default.
 
 We will further check our model by running it on our test data. We will also create a separate column that shows the Predicted Risk based on our model.  
 
 ```{r}
-table(test_reg$Risk_Flag)
-str(test_reg)
+#table(test_reg$Risk_Flag)
+#str(test_reg)
 #test_aic <- test[,2:7]
 #prob_predict <- predict(riskaic, type ='response', newdata = test_aic )
 
@@ -471,20 +482,19 @@ head(test_reg)
 table(test_reg$predictedRisk) 
 table(test_reg$Risk_Flag)
 
-library(caret)
 confusionMatrix(as.factor(test_reg$predictedRisk), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
-The above Confusion Matrix shows us an Accuracy of 81% on the test set. Althought a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 12%, and precision for them is only 15%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1277 accurately. It predicted 7201 customers who did not default as defaulted, and 8971 customers who actually defaulted as not defaulted.
+The above Confusion Matrix shows us an Accuracy of 81% on the test set. Although a high accuracy score, we see that the Sensitivity (Recall rate) for customers defaulting is only 12%, and precision for them is only 15%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1277 accurately. It predicted 7201 customers who did not default as defaulted, and 8971 customers who actually defaulted as not defaulted.
 
 
 ### Hoslem and Lemshow Test for AIC from exhaustive method
 
-The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic regression fit. 
+The Hoslem and Lemshow Goodness of Fit test can be used to evaluate logistic regression fit. 
 
 ```{r}
-loadPkg("ResourceSelection") # function hoslem.test( ) for logit model evaluation
-riskaicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskaic)) # Hosmer and Lemeshow test, a chi-squared test
-unloadPkg("ResourceSelection") 
+ # function hoslem.test( ) for logit model evaluation
+riskaicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskaic)) # Hosmer and Lemshow test, a chi-squared test
+
 
 riskaicHoslem
 ```
@@ -494,22 +504,22 @@ The p-value `r riskaicHoslem$p.value` is well under the $\alpha$ at 0.05, this i
 
 Receiver-Operator-Characteristic (ROC) curve and Area-Under-Curve (AUC) measures the true positive rate (or sensitivity) against the false positive rate (or specificity). The area-under-curve is always between 0.5 and 1. Values higher than 0.8 is considered good model fit. 
 ```{r}
-loadPkg("pROC") # receiver operating characteristic curve, gives the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The curve is on sensitivity/recall/true-positive-rate vs false_alarm/false-positive-rate/fall-out.
+ # receiver operating characteristic curve, gives the diagnostic ability of a binary classifier system as its discrimination threshold is varied. The curve is on sensitivity/recall/true-positive-rate vs false_alarm/false-positive-rate/fall-out.
 
-h <- roc(Risk_Flag ~ prob_predict, data=test_reg)
-auc(h) # area-under-curve prefer 0.8 or higher.
-plot(h)
+h_exh_aic <- roc(Risk_Flag ~ prob_predict, data=test_reg)
+auc(h_exh_aic) # area-under-curve prefer 0.8 or higher.
+plot(h_exh_aic)
 ```
-We have here the area-under-curve of `r auc(h)`, which is less than 0.8 indicating the model is not a good fit.  
+We have here the area-under-curve of `r auc(h_exh_aic)`, which is less than 0.8 indicating the model is not a good fit.  
 
 
 ### McFadden
 McFadden is another evaluation tool we can use on logit regressions. This is part of what is called pseudo-R-squared values for evaluation tests. We can calculate the value directly from its definition if we so choose to.
 
-```{r McFadden_direct}
-RiskNullLogit <- glm(Risk_Flag ~ 1, data = train_reg, family = "binomial")
-mcFadden = 1 - logLik(riskaic)/logLik(RiskNullLogit)
-mcFadden
+```{r McFadden_exhaust_aic}
+RiskNullLogit_exh <- glm(Risk_Flag ~ 1, data = train_reg, family = "binomial")
+mcFadden_exh_aic = 1 - logLik(riskaic)/logLik(RiskNullLogit_exh)
+mcFadden_exh_aic
 
 
 ```
@@ -535,9 +545,7 @@ Based on the above, we can see the Top 5 models. The top model has a BIC of 1396
  
 ### Confusion Matrix
 ```{r}
-loadPkg("regclass")
 confusion_matrix(riskbestglm_bic$BestModel)
-unloadPkg("regclass")
 
 ```
 
@@ -572,7 +580,6 @@ head(test_reg)
 table(test_reg$predictedRisk) 
 table(test_reg$Risk_Flag)
 
-library(caret)
 confusionMatrix(as.factor(test_reg$predictedRisk), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
 ```
 As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 80.5% on the test set. The Sensitivity (Recall rate) for customers defaulting is again 12%, and precision to predict the risk is only 14.30%. Implying, out of a total of 10,248 customers defaulted, the model predicted only 1229 accurately. It predicted 7366 customers who did not default as defaulted, and 9019 customers who actually defaulted as not defaulted. 
@@ -583,11 +590,11 @@ As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 80.5
 The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic regression fit. 
 
 ```{r}
-loadPkg("ResourceSelection") # function hoslem.test( ) for logit model evaluation
-riskaicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskbic)) # Hosmer and Lemeshow test, a chi-squared test
-unloadPkg("ResourceSelection") 
+ # function hoslem.test( ) for logit model evaluation
+riskbicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskbic)) # Hosmer and Lemeshow test, a chi-squared test
 
-riskaicHoslem
+
+riskbicHoslem
 ```
 
 
@@ -596,47 +603,29 @@ The p-value is again well under 0.05, implying all the features as significant i
 ### ROC/AUC 
 
 ```{r}
-h <- roc(Risk_Flag ~ prob_predict, data=test_reg)
-auc(h) # area-under-curve prefer 0.8 or higher.
-plot(h)
+h_exh_bic <- roc(Risk_Flag ~ prob_predict, data=test_reg)
+auc(h_exh_bic) # area-under-curve prefer 0.8 or higher.
+plot(h_exh_bic)
 ```
-We have here the area-under-curve of `r auc(h)`, also less than 0.8 indicating the model is not a good fit.  
+We have here the area-under-curve of `r auc(h_exh_bic)`, also less than 0.8 indicating the model is not a good fit.  
 
 
 
 ### McFadden
 McFadden is another evaluation tool we can use on logit regressions. This is part of what is called pseudo-R-squared values for evaluation tests. We can calculate the value directly from its definition if we so choose to.
 
-```{r McFadden_direct}
+```{r McFadden_exhaust_bic}
 
-mcFadden = 1 - logLik(riskbic)/logLik(RiskNullLogit)
-mcFadden
+mcFadden_exh_bic = 1 - logLik(riskbic)/logLik(RiskNullLogit_exh)
+mcFadden_exh_bic
 ```
 
-
-
-<!-- # Splitting the dataset -->
-
-```{r}
-# library(caTools)
-# 
-# loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
-# 
-# 
-# split <- sample.split(loandata, SplitRatio = 0.75)
-# split
-#    
-# train_reg <- subset(loandata, split == "TRUE")
-# test_reg <- subset(loandata, split == "FALSE")
-
-```
 
 # Decision Tree 
 Model
 
 ```{r, results='markup'}
-library(rpart)
-library(rpart.plot)
+
 
 dt <- rpart(Risk_Flag ~ ., data = train_reg, method= "class")
 # predicting in test set
@@ -705,7 +694,7 @@ Model
 
 ```{r, results='markup'}
 #install.packages("randomForest")
-library(randomForest)
+
 
 
 rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
@@ -734,7 +723,7 @@ plot(rf_h)
 Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We used the training data to develop our models, so we'll now run each training model against our test dataset. We'll analyze the ROC_AUC and accuracy for each model, given that we already know each should produce low error as judged by AIC/BIC in our initial regression builds.
 
 The final model for manual logistic regression was: 
-**"Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single"**
+**"Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single"**
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(manual_cm)` and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
@@ -758,3 +747,18 @@ Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(r
 
 # Conclusion and answers to questions plus overview of our final model in terms of expected likelihood changes for differences in our variables
 
+Let's now revisit our original questions and see what we've learned through our modeling:  
+First, we asked if income would be statistically significant in a model despite not being significant on it's own. Based on our various modeling, it appears that income still isn't useful, even when used in combination with other available variables. The only model that continued to use income was our model derived through forward selection. This is quite surprising since income is hugely significant for predicting loan default in the United States.  
+
+
+Based on our analysis, we were able to determine that current job experience and overall experience are individually useful in our models, but overall job experience is slightly more significant in our models. 
+	
+Since our decision tree model, which was the best, doesn't allow us to ascertain individual variable impacts, we'll instead use the best of our logistic regression models to assess the impact of an additional year of age on the likelihood of defaulting on a loan. DECIDE WHICH MODEL TO USE. Likewise, we can see that an additional year of job experience decreases the likelihood of defaulting by INSERT NUMBERS HERE.
+
+As we mentioned above, manual, exhaustive, forward, and backward model selection all produced models that were statistically significant, but practically useless. Instead, the model produced by our decision tree was the best model for our purposes. Likewise, our decision tree model is the only model that produced an ROC-AUC above the 0.8 AUC bar for usefulness.
+
+Pretty clearly we're able to see that the most significant predictors for default are job experience, age, marital status, home-ownership status, and car ownership status. Other variables were useful in individual models, but these were the most consistent across the models.
+
+FINAL DETERMINATION OF BEST MODEL - NEED TO DECIDE
+	• Using a confusion matrix, which of our "best" models appears to perform best across the different metrics we care about (precision, recall-rate, etc.)
+	• How do the different models fare when used on the test dataset? 	
