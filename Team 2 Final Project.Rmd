@@ -672,9 +672,9 @@ The final model for forward selection was: __Risk_Flag ~ Experience + House_Owne
 
 In developing this model with a 0.115 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(fwd_h)` and correctly predicted `r fwd_cm$table[4:4]` defaulted accounts and `r fwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r fwd_accuracy` or `r fwd_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
-The final model for exhaustive selection (optimized for AIC) was: **"Risk_Flag ~ Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS"**
+The final model for exhaustive selection (optimized for BIC) was: **"Risk_Flag ~ Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS"**
 
-In developing this model with a 0.15 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_aic)` and correctly predicted `r exh_aic_cm$table[4:4]` defaulted accounts and `r exh_aic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_aic_accuracy` or `r exh_aic_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
+In developing this model with a 0.15 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_bic)` and correctly predicted `r exh_bic_cm$table[4:4]` defaulted accounts and `r exh_bic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_bic_accuracy` or `r exh_bic_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
 Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
@@ -691,13 +691,12 @@ First, we asked if income would be statistically significant in a model despite 
 Based on our analysis, we were able to determine that current job experience and overall experience are individually useful in our models, but overall job experience is slightly more significant in our models. 
 	
 ```{r}
-expcoeff_exh_aic = exp(coef(riskaic))
+expcoeff_exh_bic = exp(coef(riskbic))
 # expcoeff
-xkabledply( as.table(expcoeff_exh_aic), title = "Exponential of coefficients in Exhaustive AIC Logit Reg" )
-(1-expcoeff_exh_aic[3])*100
+xkabledply( as.table(expcoeff_exh_bic), title = "Exponential of coefficients in Exhaustive BIC Logit Reg" )
 ```
 
-Since our decision tree model, which was the best, doesn't allow us to ascertain individual variable impacts, we'll instead use the best of our logistic regression models to assess the impact of an additional year of age on the likelihood of defaulting on a loan. For these purposes, we'll use our exhaustive selection AIC criteria model. For a one year increase in age, we would expect to see a decrease in the odds ratio of `r expcoeff_exh_aic[2]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_aic[2])*100`%. Likewise, we can see that an additional year of overall job experience decreases the odds ratio of defaulting by `r expcoeff_exh_aic[3]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_aic[3])*100`%.
+Since our decision tree model, which was the best, doesn't allow us to ascertain individual variable impacts, we'll instead use the best of our logistic regression models to assess the impact of an additional year of age on the likelihood of defaulting on a loan. For these purposes, we'll use our exhaustive selection BIC criteria model. For a one year increase in age, we would expect to see a decrease in the odds ratio of `r expcoeff_exh_bic[2]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_bic[2])*100`%. Likewise, we can see that an additional year of overall job experience decreases the odds ratio of defaulting by `r expcoeff_exh_bic[3]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_bic[3])*100`%.
 
 As we mentioned above, manual, exhaustive, forward, and backward model selection all produced models that were statistically significant, but practically useless. Instead, the model produced by our decision tree was the best model for our purposes. Likewise, our decision tree model is the only model that produced an ROC-AUC above the 0.8 AUC bar for usefulness.
 
