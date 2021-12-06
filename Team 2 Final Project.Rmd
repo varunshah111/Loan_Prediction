@@ -157,10 +157,10 @@ house_job_exp_age_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + 
 summary(house_job_exp_age_inter)
 ```
 
-Looking at our model outputs, we see that all of our non-interaction variables are still significant. Additionally, we see that the interaction between job experience and age is significant, as well as the interaction between home ownership (Neither) and age is significant. Notably, the interaction between job experience and home ownership is still not significant and the interaction between home ownership (Owning) and age is not significant. However, since one of the two home ownership categorical variables is significant with age, we'll keep both in the model.
+Looking at our model outputs, we see that all of our non-interaction variables are still significant. Additionally, we see that the interaction between job experience and age is not significant, as well as the interaction between home ownership (Neither) and age is significant. Notably, the interaction between job experience and home ownership is still not significant and the interaction between home ownership (Owning) and age is not significant. However, since one of the two home ownership categorical variables is significant with age, we'll keep both in the model.
 
 ```{r}
-house_job_exp_age_limit_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age +  Experience:Age + House_Ownership:Age, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + House_Ownership:Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_inter)
 ```
 
@@ -168,14 +168,14 @@ As expected, when we rerun the model without the insignificant job experience an
 
 Now, let's try adding in marital status, our final variable we know has significance on it's own.
 ```{r}
-house_job_exp_age_limit_marital <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital)
 ```
 
-We see here that marital status is significant in our model with a p-value <0.001.
+We see here that marital status is significant in our model with a p-value <0.001, but age and experience are not significant as an interaction term.
 
 ```{r}
-house_job_exp_age_limit_marital_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Experience:Age + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital_inter <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_inter)
 ```
 Examining a model with the interaction terms, the interaction of home ownership and marriage status is significant for the combination of owning a home and married relative to the base value of Renting and Single.
@@ -183,7 +183,7 @@ Examining a model with the interaction terms, the interaction of home ownership 
 Now, let's see what happens if we add income into our model. From our EDA we found that income was not significantly different between those who defaulted on their loans and those who didn't. However, we're curious to see if income is a significant variable when we are already considering job experience, home ownership status, age, and the combinations of home ownership and age plus job experience and age.
 
 ```{r}
-house_job_exp_age_limit_marital_income <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital_income <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_income)
 ```
 
@@ -191,7 +191,7 @@ Based on our model outputs, income doesn't provide added value when we already k
 
 Finally, let's see what happens if we add in car ownership to our model and remove income.
 ```{r}
-house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Income + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_income_car)
 ```
 
@@ -200,6 +200,7 @@ When we add in car ownership, we see that income becomes insignificant, while ev
 Now that we've determined this is our "best" model using manual regression techniques, let's do some analysis about how good this model actually is using our test data est.
 
 ```{r}
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, test_reg, type='response')
 test_reg$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
 h_manual <- roc(Risk_Flag ~ prob_manual, data = test_reg)
@@ -210,7 +211,7 @@ plot(h_manual)
 If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the truly defaulting accounts as those who will default.
 
 ```{r}
-manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
+manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(manual_cm$table)
 manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
 ```
@@ -220,8 +221,8 @@ All that being said, let's still do some interpretation of our coefficients, to 
 ```{r}
 expcoeff = exp(coef(house_job_exp_age_limit_marital_income_car))
 # expcoeff
-xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Logit Reg" )
-expcoeff[2]
+xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Manual Logit Reg" )
+
 ```
 
 In these interpretations, these odds ratio changes are true on average when holding all other variables constant in the model.
@@ -231,7 +232,7 @@ For each additional year of experience gained, we expect the odds ratio to decre
 
 For each additional year older someone is, we expect the odds ratio to decrease by `r expcoeff[5]` which corresponds to a decrease in default odds of `r (1-expcoeff[5])*100`%. This makes sense because of similar logic as experience. Going from single to married also decreases the odds ratio by `r expcoeff[6]` which corresponds to a decrease in default odds of `r (1-expcoeff[6])*100`%. The most likely explanation here is that going from single to married means that there are two incomes involved in paying off a loan or that the types of loans taken by married individuals are lower valued and get paid back more frequently. We don't have these variables in our model, unfortunately, so for now they remain speculation. Lastly, for our non-interaction terms, we see that going from not owning a car to owning a car shows an odds ratio decrease of `r expcoeff[7]` which corresponds to a decrease in default odds of `r (1-expcoeff[7])*100`%.
 
-Now, let's examine our interaction variables, which in a logistic regression correspond to a ratio of odds ratios. We're going to interpret these a little bit more loosely than our individual coefficients. The interaction between age an experience has a coefficient of `r expcoeff[8]` This means that age and experience move together and that as an individual stays equally experienced and old, their odds of defaulting hold steady, but if these move in opposite directions, then we'd start to see some change in likelihood of defaulting. For owning a home and age, our likelihood is approximately 1 again, where the older an individual is, the more impactful it is to start owning a home in terms of decreasing odds of default. Likewise, to move from renting to neither, the older an individual is, the likelier it is that they will default relative to a younger individual doing the same thing.
+Now, let's examine our interaction variables, which in a logistic regression correspond to a ratio of odds ratios. We're going to interpret these a little bit more loosely than our individual coefficients. For owning a home and age, our likelihood is approximately 1, where the older an individual is, the more impactful it is to start owning a home in terms of decreasing odds of default. Likewise, to move from renting to neither, the older an individual is, the likelier it is that they will default relative to a younger individual doing the same thing.
 
 Finally, moving from renting and single, or renting and married, or single to owning a home and being married, increases the odds ratio by `r expcoeff[11]` which corresponds to an increase in default odds of `r (expcoeff[11]-1)*100`%. One theory for why this may occur is that both owning a home and marriage are big commitments both in life and financially. As a result, it may be that taking on this much commitment at once, puts financial stress on the individual, and therefore increases the odds they default. However, moving from renting and single, or renting and married, or single to neither owning a home nor renting plus being married decreases the odds ratio by `r expcoeff[12]` which corresponds to a decrease in default odds of `r (1-expcoeff[12])*100`%.
 
@@ -278,11 +279,7 @@ summary(bkwd_bic_model)
 ### ROC- AUC - Backward Selection Model
 
 ```{r}
-# prob1 = predict(bkwd_bic_model,type = 'response') ## foward selection results = bkwd_bic_model_model 
-# train_reg$prob1 = prob1
-# h <- roc(Risk_Flag ~ prob1, data = train_reg)
-# auc(h)
-# plot(h)
+
 prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
 test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
 bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
@@ -622,7 +619,9 @@ xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
 # Accuracy
 missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
 print(paste('Random Forest Accuracy =', 1 - missing_classerr))
+
 plot(rf)
+
 test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
 rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
 auc(rf_h)
@@ -665,7 +664,14 @@ First, we asked if income would be statistically significant in a model despite 
 
 Based on our analysis, we were able to determine that current job experience and overall experience are individually useful in our models, but overall job experience is slightly more significant in our models. 
 	
-Since our decision tree model, which was the best, doesn't allow us to ascertain individual variable impacts, we'll instead use the best of our logistic regression models to assess the impact of an additional year of age on the likelihood of defaulting on a loan. DECIDE WHICH MODEL TO USE. Likewise, we can see that an additional year of job experience decreases the likelihood of defaulting by INSERT NUMBERS HERE.
+```{r}
+expcoeff_exh_aic = exp(coef(riskaic))
+# expcoeff
+xkabledply( as.table(expcoeff_exh_aic), title = "Exponential of coefficients in Exhaustive AIC Logit Reg" )
+(1-expcoeff_exh_aic[3])*100
+```
+
+Since our decision tree model, which was the best, doesn't allow us to ascertain individual variable impacts, we'll instead use the best of our logistic regression models to assess the impact of an additional year of age on the likelihood of defaulting on a loan. For these purposes, we'll use our exhaustive selection AIC criteria model. For a one year increase in age, we would expect to see a decrease in the odds ratio of `r expcoeff_exh_aic[2]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_aic[2])*100`%. Likewise, we can see that an additional year of overall job experience decreases the odds ratio of defaulting by `r expcoeff_exh_aic[3]` which means we would expect the likelihood of defaulting to decrease by `r (1-expcoeff_exh_aic[3])*100`%.
 
 As we mentioned above, manual, exhaustive, forward, and backward model selection all produced models that were statistically significant, but practically useless. Instead, the model produced by our decision tree was the best model for our purposes. Likewise, our decision tree model is the only model that produced an ROC-AUC above the 0.8 AUC bar for usefulness.
 
@@ -704,9 +710,8 @@ accuracy_tune(tune_fit)
 1-missing_classerr
 ```
 
-In terms of our confusion matrices based on our test dataset, our exhaustive selection method with AIC criteria produced the highest sensitivity/recall-rate of `r exh_aic_cm$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our exhaustive selection method with AIC criteria had the lowest specificity at `r exh_aic_cm$byClass[2]`. For precision, our forward selection model had the highest precision at `r fwd_cm$byClass[5]` and our decision tree model had the lowest precision at `r cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2])`.
+In terms of our confusion matrices based on our test dataset, our forward selection method produced the highest sensitivity/recall-rate of `r fwd_cm$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our forward selection method had the lowest specificity at `r fwd_cm$byClass[2]`. For precision, our random forest model had the highest precision at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])` and our forward selection model had the lowest precision at `r fwd_cm$byClass[5]`.
 
 Lastly, in terms of accuracy,  our decision tree model was the most accurate at  `raccuracy_tune(tune_fit)*100`%, while our forward selection model was the least accurate at `r fwd_accuracy *100`%.
 
-
-Based on this analysis, we can determine that our best model is likely our INSERT MODEL HERE
+Based on this analysis, we can determine that our best model is likely our decision tree model. It was second highest in precision, sensitivity, and specificity, and highest in accuracy which means it was, across the board, generally not as bad as the other models. That being said, it still was not a statistically useful model for predictions.
