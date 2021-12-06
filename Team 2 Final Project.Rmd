@@ -286,13 +286,6 @@ summary(bkwd_bic_model)
 ```
 
 
-```{r}
-# library(car)
-# xkablevif(bkwd_bic_model, wide=FALSE)
-# vif(bkwd_bic_model) 
-```
-
-
 
 ### ROC- AUC - Backward Selection Model
 
@@ -545,19 +538,6 @@ summary(riskbestglm_bic$BestModels)
 ```
 Based on the above, we can see the Top 5 models. The top model has a BIC of 139651, which includes all the features except for `Income` and `CURRENT_HOUSE_YRS`
 
- 
-### Confusion Matrix
-```{r}
-prob_predict_exh_bic <- predict(riskbic, test_reg, type='response')
-
-test_reg$prob_exh_bic <- ifelse(prob_predict_exh_bic > 0.15,1,0)
-
-exh_bic_cm <- confusionMatrix(as.factor(test_reg$prob_exh_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"))
-xkabledply(exh_bic_cm$table)
-
-exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
-```
-
 We will now run a glm model based on the Best Model we got here, without including `Income` and `CURRENT_HOUSE_YRS`. 
 
 ```{r}
@@ -575,6 +555,7 @@ We have a similar result here, except we have removed the Current Years in Home 
 
 We will also check this model by running it on our test data (as we did earlier). 
 
+### Confusion Matrix
 ```{r}
 prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
 
@@ -721,22 +702,20 @@ plot(rf_h)
 ```
 
 
-
-
-#"Best" Model Comparisons
+# "Best" Model Comparisons
 
 Now that we've developed models manually and with various selection methods, we'll compare all of our final models to determine which model is the best model. We used the training data to develop our models, so we'll now run each training model against our test dataset. We'll analyze the ROC_AUC and accuracy for each model, given that we already know each should produce low error as judged by AIC/BIC in our initial regression builds.
 
 The final model for manual logistic regression was: 
-**"Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single"**
+__Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Car_Ownership + Experience:Age + House_Ownership:Age + House_Ownership:Married.Single__
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(manual_cm)` and correctly predicted `r manual_cm$table[4:4]` defaulted accounts and `r manual_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r manual_accuracy` or `r manual_accuracy*100`%.
 
-The final model for backwards selection was: **"Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience"**
+The final model for backwards selection was: __Risk_Flag ~ CURRENT_JOB_YRS+Age+Married.Single+Car_Ownership+House_Ownership+Experience__
 
 In developing this model with a 0.145 cutoff for default (ie if the predicted value is 0.145+, then we predict default), we obtained an AUC-ROC value of `r auc(bkwd_h)` and correctly predicted `r bkwd_cm$table[4:4]` defaulted accounts and `r bkwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r bkwd_accuracy` or `r bkwd_accuracy*100`%.
 
-The final model for forward selection was: **"Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS"**
+The final model for forward selection was: __Risk_Flag ~ Income + Age + Experience + Married.Single + House_Ownership + Car_Ownership + CURRENT_JOB_YRS + CURRENT_HOUSE_YRS__
 
 In developing this model with a 0.115 cutoff for default (ie if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(fwd_h)` and correctly predicted `r fwd_cm$table[4:4]` defaulted accounts and `r fwd_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r fwd_accuracy` or `r fwd_accuracy*100`%. The forward selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization.
 
@@ -750,7 +729,7 @@ In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a
 
 Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(rf_h)` and correctly predicted `r rf_cm[4:4]` defaulted accounts and `r rf_cm[1:1]` non-defaulted accounts for a total accuracy of `r 1-missing_classerr` or `r (1-missing_classerr)*100`%. This model once again dips below our desired AUC-ROC threshold, so is not a useful model.
 
-# Conclusion and answers to questions plus overview of our final model in terms of expected likelihood changes for differences in our variables
+# Answering our SMART Questions
 
 Let's now revisit our original questions and see what we've learned through our modeling:  
 First, we asked if income would be statistically significant in a model despite not being significant on it's own. Based on our various modeling, it appears that income still isn't useful, even when used in combination with other available variables. The only model that continued to use income was our model derived through forward selection. This is quite surprising since income is hugely significant for predicting loan default in the United States.  
