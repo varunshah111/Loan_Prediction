@@ -42,8 +42,6 @@ options(scientific=T, digits = 3)
 # use scipen=999 to prevent scientific notation at all times
 ```
 
-Let's first import our dataset before we do any analysis. Our dataset is based on possible variables that could be used to predict loan default status for employed individuals in India.
-
 ```{r loanpredict}
 #Import dataset
 loanpredict <- read.csv("Training Data.csv", header = TRUE)
@@ -62,12 +60,8 @@ defaulted <- subset(loandata, Risk_Flag == 1)
 not_defaulted <- subset(loandata, Risk_Flag == 0)
 ```
 
-
-### Splitting the dataset to Train 75% & Test 25%
-
-Before we get into any of the analysis, let's create a training dataset and a test dataset so that we can better understand how good our models will be in the future and not just on the data upon which they're built.
-
 ```{r}
+#Split data into Test and Train (75%-25%)
 loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 set.seed(123)
 split <- sample.split(loandata, SplitRatio = 0.75)
@@ -77,8 +71,87 @@ train_reg <- subset(loandata, split == "TRUE")
 test_reg <- subset(loandata, split == "FALSE")
 ```
 
+# Exploratory Data Analysis
+INSERT ANALYSIS HERE
+
 
 In our previous report, we conducted some exploratory data analysis (EDA) and determined that there were significant differences between those who defaulted on their loans and those who didn't in terms of home-ownership status, marital status, years of home-ownership, job experience, years of experience in current job, and age. Notably, we did not see a significant difference in income levels between the two populations.
+
+
+# How did we select and determine the correct model
+ALL FINAL MODEL VERSIONS NEED TO BE HERE
+
+
+# What predictions can we make with our models
+
+
+
+# How reliable are our results
+
+Now that we've developed our models and have done some predictions, let's determine how reliable our models are, and if should be using them in a business context. 
+
+```{r}
+performance_data <- matrix(c(manual_cm$byClass[1],bkwd_cm$byClass[1],fwd_cm$byClass[1],exh_bic_cm$byClass[1],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2]),manual_cm$byClass[2],bkwd_cm$byClass[2],fwd_cm$byClass[2],exh_bic_cm$byClass[2],cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2]),rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2]), manual_cm$byClass[5],bkwd_cm$byClass[5],fwd_cm$byClass[5],exh_bic_cm$byClass[5],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2]), manual_accuracy,bkwd_accuracy,fwd_accuracy,exh_bic_accuracy,accuracy_tune(tune_fit),1-missing_classerr, auc(h_manual), auc(bkwd_h), auc(fwd_h), auc(h_exh_bic), auc(dt_h), auc(rf_h)),ncol=6,byrow=TRUE)
+colnames(performance_data) <- c("High","Low","Middle")
+rownames(performance_data) <- c("Sensitivity/Recall Rate","Specificity","Precision", "Accuracy", "ROC-AUC")
+performance_table <- as.table(performance_data)
+
+xkabledply(performance_table)
+```
+
+As we can see in this table, our forward selection method produced the highest sensitivity/recall-rate of `r fwd_cm$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our forward selection method had the lowest specificity at `r fwd_cm$byClass[2]`. For precision, our random forest model had the highest precision at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])` and our forward selection model had the lowest precision at `r fwd_cm$byClass[5]`.  
+
+
+In order to feel comfortable using this model in a business setting, we would need to see a far higher sensitivity rate. As a bank, it is okay if we accidentally predict some good customers as defaulting. Obviously we don't want to predict too many falsely in those regards, but it's far less costly than predicting a defaulting customer as non-defaulting. As a result, we would want a sensitivity rate in the 90s so that we're correctly predicting at elast 90% of the true defaulting customer correctly. However, based on our models above, the highest sensitivity we're seeing is `r fwd_cm$byClass[1]`, which is below our usable value here.  
+
+
+In terms of accuracy,  our decision tree model was the most accurate at  `raccuracy_tune(tune_fit)*100`%, while our forward selection model was the least accurate at `r fwd_accuracy *100`%. Lastly, our exhaustive model had the highest ROC-AUC value of `r auc(h_exh_bic)` while our manual regression and backward selection models jointly had the lowest ROC-AUC values of `r auc(h_manual)`.  
+
+
+Based on this information alone, we can say that all of our models are not reliable. All of them have low ROC-AUC values, far below the 0.8 threshold we would require to consider a model reliable, and, as mentioned earlier, all have too low of a sensitivity to even be considered.  
+
+
+While we could further consider the Hoslem and Lemshow Goodness of Fit, this wouldn't change our assumption of reliability. A good fit simply means that the coefficients are appropriate, but doesn't change the lack of predictive power in a useful manner. Likewise, we could use the McFadden pseudo $R^2$ values to assess how much variation in outcome is explained by our models, but again, this will not change our determination of lack of reliability in these models, so we will forgo those analyses here for sake of brevity.  
+
+
+
+# Ideal Next Steps
+
+Despite the lack of reliability in our models, there are some additional pieces of information that would allow us to improve our models or at least control the limitations. First would simply be additional variables. Some potential variables include loan amount, loan duration, loan type, etc. These would potentially help us classify our loans and give us more reliability within certian loan types, even if we can't necessarily get reliability in all loan types from the same model. This means we could create different models (even different types of models) for each loan structure to help assess risk within that.  
+
+
+Another variable that'd be helpful in our analysis would be gender. Gender is highly predictive of consumer loan behavior in the United States (and is illegal to use in these types of models due to discrimination laws). It would be interesting to determine if this variable is equally predictive in India.  
+
+
+Additional analysis that may allow these models to improve would be some sub classifications within the existing variables. For example, the variable profession had several thousand different inputs. If there were a way we could create an algorithm to classify the occupations of these consumers (ie into STEM jobs, self employed, manual labor, etc.), that may give us another angle to analyze consumers. Another option would be to again bucket the geography fields (city and state) to again bucket customers. In the United States, geography is a major risk predictor (primarily due to racial divisions and large scale economic impacts in regions such as natural disasters, minimum wage limits, single industry towns, etc) even though it is, much like gender, illegal to use for banking decisions. Creating categories such as urban or rural in our dataset would allow us to understand geographic impacts and take into consideration different living conditions for consumers in those regions. Like profession, however, there were too many inputs to manually create this field, so we'd need a geographical mapper tool or an algorithm to determine which consumer would be bucketed in each population.  
+
+
+Using these illegal variables would be more of an exercise in model development and allow us to build highly reliable models, but, at least in the United States, we would be unable to use such models in practice.  
+
+One last thing that would've helped is cloud computing capabilities. Running complex models such as decision trees and random forests is difficult on any laptop. We would love to run more complex and powerful version of the models that we created in the cloud with expansive processing power, but sadly our laptops are unable to handle models of that scale.  
+
+In terms of limitations in our dataset and analysis, because we had such imbalanced data, we had to be willing to sacrifice accuracy for sensitivity. Essentially we were able to obtain 87% accuracy instantly, solely by predicting 0 defaults. In banking, this is a constant challenge. For example, in fraud, we assume that 99% of transactions are not fraudulent and 1% are fraudulent. Any model developer looking purely at the numbers, would be thrilled to obtain a model with 99% accuracy. However, if the entire 1% inaccuracy is all of the fraudulent transactions, that creates major problems for the bank. So, we have to be willing to sacrifice some of that accuracy in order to actually solve the issue the model is being used for.  
+
+In our case, we want the model to predict defaulting customers at the time of application so that we can avoid lending to them in favor of someone who is predicted to not default. We'd rather turn down someone who falsely alerted as defaulting, than accept someone who false alerted as non defaulting. What this means is that we need to optimize our model for the highest accuracy under the constraint of maximizing sensitivity. Based on how logistic regression models work, we don't have that capability in an automated fashion. Ideally we would use some more complicated machine learning algorithsm to allow us to optimize under these constraints.
+
+One method to fix our impbalanced sample could be to use bootstrapping in order to increase the sample size of the defaulted population. This could work given that our defaulted sample is still fairly large, even if it represents a smaller portion of the data. However, doing this may skew the model into predicting more defaults and wouldn't give us a real sense of prediction power and reliability because we're using simulated data as our target.
+
+
+
+# References
+
+
+
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ORIGINAL ANALYSIS FROM FINAL PROJECT. ADD IN WHERE NECESSARY ABOVE THIS LINE
 
 Having completed this EDA, we now want to develop a model to predict the likelihood of default status based on these variables provided at the time of the loan application. If we were a bank, this would allow us to predict who we should and shouldn't approve for loans.
 
@@ -725,8 +798,6 @@ The final model for exhaustive selection (optimized for BIC) was: **"Risk_Flag ~
 
 In developing this model with a 0.15 cutoff for default (i.e. if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_bic)` and correctly predicted `r exh_bic_cm$table[4:4]` defaulted accounts and `r exh_bic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_bic_accuracy` or `r exh_bic_accuracy*100`%. The exhaustive selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization and 0.115 for forward selection.
 
-
-
 Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
 In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a cutoff of 0.145 and correctly predicted `r cmdtt[4:4]` defaulted accounts and `r cmdtt[1:1]` non-defaulted accounts for a total accuracy of `r accuracy_tune(tune_fit)` or `r accuracy_tune(tune_fit)*100`%. Also, Income and Age are having the highest importance in this tree model.
@@ -737,7 +808,6 @@ Now, examining our random forest model, we obtained an AUC-ROC value of `r auc(r
 
 Let's now revisit our original questions and see what we've learned through our modeling:  
 First, we asked if income would be statistically significant in a model despite not being significant on it's own. Based on our various modeling, it appears that income still isn't useful, even when used in combination with other available variables. The only model that continued to use income was our model derived through forward selection. This is quite surprising since income is hugely significant for predicting loan default in the United States.  
-
 
 
 Based on our analysis, we were able to determine that current job experience and overall experience are individually useful in our models, but overall job experience is slightly more significant in our models.
