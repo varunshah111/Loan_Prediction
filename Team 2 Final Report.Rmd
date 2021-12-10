@@ -81,6 +81,172 @@ In our previous report, we conducted some exploratory data analysis (EDA) and de
 # How did we select and determine the correct model
 ALL FINAL MODEL VERSIONS NEED TO BE HERE
 
+### Manual regression techniques.
+
+```{r, results = 'show'}
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
+
+summary(house_job_exp_age_limit_marital_income_car)
+
+prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, test_reg, type='response')
+test_reg$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
+h_manual <- roc(Risk_Flag ~ prob_manual, data = test_reg)
+auc(h_manual)
+plot(h_manual)
+```
+
+```{r, results='show'}
+manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+manual_cm
+xkabledply(manual_cm$table)
+manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
+
+```
+
+### Backward Selection 
+
+```{r}
+bkwd_bic_model <- glm(Risk_Flag ~ Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
+summary(bkwd_bic_model)
+```
+
+```{r}
+prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
+test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
+bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
+auc(bkwd_h)
+```
+
+```{r}
+bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+xkabledply(bkwd_cm$table)
+bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
+bkwd_cm
+```
+
+###Forward Selection
+
+```{r}
+fwd_BIC_model <- glm(Risk_Flag ~ Experience + House_Ownership + Car_Ownership + Married.Single + Age, data = train_reg, family = "binomial")
+summary(fwd_BIC_model)
+
+```
+
+```{r}
+prob_predictaic <- predict(fwd_BIC_model, test_reg, type='response')
+test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
+fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(fwd_h)
+```
+
+
+```{r}
+fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+xkabledply(fwd_cm$table)
+fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
+fwd_cm
+```
+
+###Exhaustive Selection
+
+```{r}
+riskbic <- glm(Risk_Flag ~ Age +
+                 Experience +
+                 Married.Single +
+                 House_Ownership +
+                 Car_Ownership, data = train_reg, family = "binomial")
+summary(riskbic)
+```
+
+```{r}
+prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
+
+test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0)
+
+exh_bic_cm <- confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm
+```
+
+```{r}
+exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
+exh_bic_accuracy
+```
+
+```{r}
+h_exh_bic <- roc(Risk_Flag ~ prob_predict_bic, data=test_reg)
+auc(h_exh_bic) # area-under-curve prefer 0.8 or higher.
+
+plot(h_exh_bic)
+
+```
+
+###Decision tree 
+```{r}
+accuracy_tune <- function(fit) {
+    predict_unseen <- predict(fit, test_reg, type = 'class')
+    table_mat <- table(test_reg$Risk_Flag, predict_unseen)
+    accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+    accuracy_Test
+}
+control <- rpart.control(minsplit = 4,
+    minbucket = round(4 / 3),
+    maxdepth = 30,
+    cp = 0)
+tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
+accuracy_tune(tune_fit)
+```
+
+```{r}
+predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
+cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
+xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
+confusionMatrix(predict_dt_test_tune,test_reg$Risk_Flag)
+
+```
+
+
+```{r}
+pred <- predict(tune_fit, newdata=test_reg)
+test_reg$prob_dt <- ifelse(pred[,1] > 0.855,0,1)
+dt_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(dt_h)
+plot(dt_h)
+
+```
+
+### Random Forest 
+
+```{r}
+
+rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
+# predicting in test set
+predict_test <- predict(rf, test_reg, type = 'response')
+#confusion matrix  
+confusionMatrix(predict_test,test_reg$Risk_Flag)
+rf_cm <- table(test_reg$Risk_Flag, predict_test)
+xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
+
+```
+
+
+```{r}
+missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
+print(paste('Random Forest Accuracy =', 1 - missing_classerr))
+```
+
+
+```{r}
+test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
+rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
+auc(rf_h)
+plot(rf_h)
+
+```
+
+
+We've developed models manually, models with various selection, decision tree, and random forests. We compare all of our final models to determine which model is the best. We used the training data to develop our models and test the performance with the test dataset. Our goal was to identify defaulted and not defaulted, in our models positive class (not defaulted) greatly outnumber the negative class (defaulted). Intuitively we know that proclaiming all data being not defaulted isn't helpful and instead we should focus on identifying which cases are going to default, that's why accuracy was not a good measure for assessing model performance. We focus on the ROC_AUC,  precision, and recall rate to evaluate the model. We compromise our accuracy score of the model to obtain a better recall rate and precision. The reason we did this is to obtain a model which is able to predict not only true positive but also true negatives, and reducing the amount false negatives.
+
+Taking into consideration these parameters we determine the Decision Tree was the clear winner with the higher accuracy score, higher recall rate, second-highest precision, and second-highest ROC-AUC score.
 
 # What predictions can we make with our models
 
@@ -92,7 +258,7 @@ Now that we've developed our models and have done some predictions, let's determ
 
 ```{r}
 performance_data <- matrix(c(manual_cm$byClass[1],bkwd_cm$byClass[1],fwd_cm$byClass[1],exh_bic_cm$byClass[1],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2]),manual_cm$byClass[2],bkwd_cm$byClass[2],fwd_cm$byClass[2],exh_bic_cm$byClass[2],cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2]),rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2]), manual_cm$byClass[5],bkwd_cm$byClass[5],fwd_cm$byClass[5],exh_bic_cm$byClass[5],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2]), manual_accuracy,bkwd_accuracy,fwd_accuracy,exh_bic_accuracy,accuracy_tune(tune_fit),1-missing_classerr, auc(h_manual), auc(bkwd_h), auc(fwd_h), auc(h_exh_bic), auc(dt_h), auc(rf_h)),ncol=6,byrow=TRUE)
-colnames(performance_data) <- c("High","Low","Middle")
+colnames(performance_data) <- c("Manual","Backward","Forward","Exhaustive","Decision Tree","Random Forest")
 rownames(performance_data) <- c("Sensitivity/Recall Rate","Specificity","Precision", "Accuracy", "ROC-AUC")
 performance_table <- as.table(performance_data)
 
