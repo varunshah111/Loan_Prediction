@@ -147,6 +147,9 @@ Years in current housing is insignificant in our model when we already know over
 ```{r}
 house_job_exp_age <- glm(Risk_Flag ~ Experience + House_Ownership + Age, data = train_reg, family = 'binomial')
 summary(house_job_exp_age)
+```
+
+```{r, results='show'}
 vif(house_job_exp_age)
 ```
 
@@ -190,7 +193,7 @@ summary(house_job_exp_age_limit_marital_income)
 Based on our model outputs, income doesn't provide added value when we already know the information from our previous model. Based on our EDA, this is expected, but based on how important income is as a risk splitter in the United States, this is quite surprising that income remains so insignificant as a predictor.
 
 Finally, let's see what happens if we add in car ownership to our model and remove income.
-```{r}
+```{r, results = 'show'}
 house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Income + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 summary(house_job_exp_age_limit_marital_income_car)
 ```
@@ -199,7 +202,7 @@ When we add in car ownership, we see that income becomes insignificant, while ev
 
 Now that we've determined this is our "best" model using manual regression techniques, let's do some analysis about how good this model actually is using our test data est.
 
-```{r}
+```{r, results = 'show'}
 house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, test_reg, type='response')
 test_reg$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
@@ -210,15 +213,16 @@ plot(h_manual)
 
 If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the truly defaulting accounts as those who will default.
 
-```{r}
+```{r, results='show'}
 manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+manual_cm
 xkabledply(manual_cm$table)
 manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
 ```
 
 All that being said, let's still do some interpretation of our coefficients, to understand the impacts of our variables on the likelihood of defaulting. Given that we have some interaction terms (ratio of ratios), the interpretation may be a bit tricky for some of our variables, but that's ok.
 
-```{r}
+```{r, results='show'}
 expcoeff = exp(coef(house_job_exp_age_limit_marital_income_car))
 # expcoeff
 xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Manual Logit Reg" )
@@ -269,7 +273,7 @@ From backward selection with BIC as criteria we are getting 5 features. It exclu
 As BIC is giving us less features we can consider this as the final model with backward elimination. Now let's make a model with these 5 features.
 
 
-```{r}
+```{r, results = 'show'}
 bkwd_bic_model <- glm(Risk_Flag ~ Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
 summary(bkwd_bic_model)
 ```
@@ -278,7 +282,7 @@ summary(bkwd_bic_model)
 
 ### ROC- AUC - Backward Selection Model
 
-```{r}
+```{r, results='show'}
 prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
 test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
 bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
@@ -333,7 +337,7 @@ fwd_BIC_model <- step(null_model, scope = list(lower = null_model, upper = full_
 From forward selection with BIC as criteria we are getting 5 features excluding the Income, CURRENT_JOB_YRS, and CURRENT_HOUSE_YRS.
 As, BIC is giving us less features we are taking this as final forward selection model.
 
-```{r}
+```{r, results = 'show'}
 fwd_BIC_model <- glm(Risk_Flag ~ Experience + House_Ownership + Car_Ownership + Married.Single + Age, data = train_reg, family = "binomial")
 summary(fwd_BIC_model)
 ```
@@ -342,7 +346,7 @@ summary(fwd_BIC_model)
 ### ROC- AUC - Forward selection model
 
 
-```{r}
+```{r, results = 'show'}
 prob_predictaic <- predict(fwd_BIC_model, test_reg, type='response')
 test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
 fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
@@ -497,7 +501,7 @@ We now look at the BIC with exhaustive method.
 ## Exhaustive - BIC
 
 
-```{r}
+```{r, results = 'show'}
 str(Xy)
 riskbestglm_bic <- bestglm(Xy = train_reg, family = binomial,
                        IC = "BIC", method = "exhaustive")
@@ -509,7 +513,7 @@ Based on the above, we can see the Top 5 models. The top model has a BIC of 1245
 
 We will now run a glm model based on the Best Model we got here, without including `Income`,`CURRENT_HOUSE_YRS`and `CURRENT_JOB_YRS`
 
-```{r}
+```{r, results='show'}
 riskbic <- glm(Risk_Flag ~ Age +
                  Experience +
                  Married.Single +
@@ -529,7 +533,7 @@ Also, a customer owning a home also reduces the log odds ratio of defaulting by 
 We will also check this model by running it on our test data (as we did earlier).
 
 ### Confusion Matrix
-```{r}
+```{r, results = 'show'}
 prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
 test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0)
 # Comparing the Risk v Predicted Risk ratio
@@ -546,7 +550,7 @@ As we have seen earlier, the above Confusion Matrix shows us an Accuracy of 81.9
 
 The Hosmer and Lemeshow Goodness of Fit test can be used to evaluate logistic regression fit.
 
-```{r}
+```{r, results ='show'}
  # function hoslem.test( ) for logit model evaluation
 riskbicHoslem = hoslem.test(train_reg$Risk_Flag, fitted(riskbic)) # Hosmer and Lemeshow test, a chi-squared test
 riskbicHoslem
@@ -557,7 +561,7 @@ The p-value is again well under 0.05, implying all the features are significant 
 
 ### ROC/AUC
 
-```{r}
+```{r, results = 'show'}
 h_exh_bic <- roc(Risk_Flag ~ prob_predict_bic, data=test_reg)
 auc(h_exh_bic) # area-under-curve prefer 0.8 or higher.
 plot(h_exh_bic)
@@ -601,7 +605,7 @@ accuracy_tune <- function(fit) {
     accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
     accuracy_Test
 }
-control <- rpart.control(minsplit = 3,
+control <- rpart.control(minsplit = 4,
     minbucket = round(4 / 3),
     maxdepth = 30,
     cp = 0)
@@ -615,9 +619,14 @@ xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
 Decision Tree Accuracy with Tuning: 0.88%
 
 
-```{r, results='hide'}
-library(tidyverse)
+```{r}
 plot(tune_fit)
+```
+
+
+```{r, results='show'}
+library(tidyverse)
+# plot(tune_fit)
 # text(tune_fit, use.n=TRUE, all=TRUE, cex=.8)
 #ROC-AUC Calculation for Decision Tree
 pred <- predict(tune_fit, newdata=test_reg)
@@ -643,10 +652,10 @@ ggplot2::ggplot(df2) +
 
 ```
 
-Here, Income is having the highest importance followed by Age and Experience. House_Ownership is having the least imporance is decision tree.
+Here, Income is having the highest importance followed by Age and Experience. House_Ownership is having the least importance is decision tree.
 
 
-```{r}
+```{r, results='show'}
 # library(caret)
 # varImp(tune_fit)
 plot(dt_h)
@@ -716,6 +725,8 @@ The final model for exhaustive selection (optimized for BIC) was: **"Risk_Flag ~
 
 In developing this model with a 0.15 cutoff for default (i.e. if the predicted value is 0.115+, then we predict default), we obtained an AUC-ROC value of `r auc(h_exh_bic)` and correctly predicted `r exh_bic_cm$table[4:4]` defaulted accounts and `r exh_bic_cm$table[1:1]` non-defaulted accounts for a total accuracy of `r exh_bic_accuracy` or `r exh_bic_accuracy*100`%. The exhaustive selection model uses a different cut off point because the model maximizes ROC-AUC at this value, instead of the approximately 0.145 value used for manual and backwards maximization and 0.115 for forward selection.
 
+
+
 Now, let's compare these regression models to our decision tree and random forest models, to see if changing the model type gave us better results.
 
 In our decision tree model, we obtained an AUC-ROC value of `r auc(dt_h)` with a cutoff of 0.145 and correctly predicted `r cmdtt[4:4]` defaulted accounts and `r cmdtt[1:1]` non-defaulted accounts for a total accuracy of `r accuracy_tune(tune_fit)` or `r accuracy_tune(tune_fit)*100`%. Also, Income and Age are having the highest importance in this tree model.
@@ -728,9 +739,10 @@ Let's now revisit our original questions and see what we've learned through our 
 First, we asked if income would be statistically significant in a model despite not being significant on it's own. Based on our various modeling, it appears that income still isn't useful, even when used in combination with other available variables. The only model that continued to use income was our model derived through forward selection. This is quite surprising since income is hugely significant for predicting loan default in the United States.  
 
 
+
 Based on our analysis, we were able to determine that current job experience and overall experience are individually useful in our models, but overall job experience is slightly more significant in our models.
 
-```{r}
+```{r, results='show'}
 expcoeff_exh_bic = exp(coef(riskbic))
 # expcoeff
 xkabledply( as.table(expcoeff_exh_bic), title = "Exponential of coefficients in Exhaustive BIC Logit Reg" )

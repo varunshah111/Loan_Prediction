@@ -1,0 +1,319 @@
+---
+title: "Final Project Team 2"
+authors: "By: Cooper, Nusrat, Ricardo, and Varun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r init, include=FALSE}
+# some of common options (and the defaults) are:
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right',
+library(ezids)
+library(dplyr)
+library(lmtest)
+library(vcd)
+library(bestglm)
+library(caTools)
+library(car)
+library(pROC)
+library(caret)
+library(regclass)
+library(ResourceSelection)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3)
+# options(scipen=9, digits = 3)
+# use scipen=999 to prevent scientific notation at all times
+```
+
+```{r loanpredict}
+#Import dataset
+loanpredict <- read.csv("Training Data.csv", header = TRUE)
+str(loanpredict)
+#Convert necessary variables to factors/categoricals and set appropriate level titles
+loanpredict$Married.Single <- recode_factor(loanpredict$Married.Single, single = "Single", married = "Married")
+loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented = "Renting", owned = "Owning", norent_noown = "Neither")
+loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
+#Remove variables that won't help in our analysis
+loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
+#Create summary table of remaining variables
+xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
+#Selecting only values where the customer defaulted
+defaulted <- subset(loandata, Risk_Flag == 1)
+#Selecting only values where the customer did not default
+not_defaulted <- subset(loandata, Risk_Flag == 0)
+```
+
+```{r}
+#Split data into Test and Train (75%-25%)
+loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+set.seed(123)
+split <- sample.split(loandata, SplitRatio = 0.75)
+# split
+
+train_reg <- subset(loandata, split == "TRUE")
+test_reg <- subset(loandata, split == "FALSE")
+```
+
+# Exploratory Data Analysis
+INSERT ANALYSIS HERE
+
+
+In our previous report, we conducted some exploratory data analysis (EDA) and determined that there were significant differences between those who defaulted on their loans and those who didn't in terms of home-ownership status, marital status, years of home-ownership, job experience, years of experience in current job, and age. Notably, we did not see a significant difference in income levels between the two populations.
+
+
+# How did we select and determine the correct model
+ALL FINAL MODEL VERSIONS NEED TO BE HERE
+
+### Manual regression 
+
+```{r, results = 'show'}
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
+
+summary(house_job_exp_age_limit_marital_income_car)
+
+prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, test_reg, type='response')
+test_reg$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
+h_manual <- roc(Risk_Flag ~ prob_manual, data = test_reg)
+auc(h_manual)
+plot(h_manual)
+```
+
+```{r, results='show'}
+manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+manual_cm
+xkabledply(manual_cm$table)
+manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
+
+```
+
+### Backward Selection 
+
+```{r,results='show'}
+bkwd_bic_model <- glm(Risk_Flag ~ Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
+summary(bkwd_bic_model)
+```
+
+```{r,results='show'}
+prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
+test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
+bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
+auc(bkwd_h)
+```
+
+```{r,results='show'}
+bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+xkabledply(bkwd_cm$table)
+bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
+bkwd_cm
+```
+
+### Forward Selection
+
+```{r,results='show'}
+fwd_BIC_model <- glm(Risk_Flag ~ Experience + House_Ownership + Car_Ownership + Married.Single + Age, data = train_reg, family = "binomial")
+summary(fwd_BIC_model)
+
+```
+
+```{r,results='show'}
+prob_predictaic <- predict(fwd_BIC_model, test_reg, type='response')
+test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
+fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(fwd_h)
+```
+
+
+```{r,results='show'}
+fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+xkabledply(fwd_cm$table)
+fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
+fwd_cm
+```
+
+### Exhaustive Selection
+
+```{r,results='show'}
+riskbic <- glm(Risk_Flag ~ Age +
+                 Experience +
+                 Married.Single +
+                 House_Ownership +
+                 Car_Ownership, data = train_reg, family = "binomial")
+summary(riskbic)
+```
+
+```{r,results='show'}
+prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
+
+test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0)
+
+exh_bic_cm <- confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm
+```
+
+```{r,results='show'}
+exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
+exh_bic_accuracy
+```
+
+```{r}
+h_exh_bic <- roc(Risk_Flag ~ prob_predict_bic, data=test_reg)
+auc(h_exh_bic) # area-under-curve prefer 0.8 or higher.
+
+plot(h_exh_bic)
+
+```
+
+###Decision tree 
+```{r,results='show'}
+accuracy_tune <- function(fit) {
+    predict_unseen <- predict(fit, test_reg, type = 'class')
+    table_mat <- table(test_reg$Risk_Flag, predict_unseen)
+    accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+    accuracy_Test
+}
+control <- rpart.control(minsplit = 4,
+    minbucket = round(4 / 3),
+    maxdepth = 30,
+    cp = 0)
+tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
+accuracy_tune(tune_fit)
+```
+
+```{r, results='show'}
+predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
+cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
+xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
+confusionMatrix(predict_dt_test_tune,test_reg$Risk_Flag)
+
+```
+
+
+```{r,results='show'}
+pred <- predict(tune_fit, newdata=test_reg)
+test_reg$prob_dt <- ifelse(pred[,1] > 0.855,0,1)
+dt_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(dt_h)
+plot(dt_h)
+
+```
+
+### Random Forest 
+
+```{r, results='show'}
+
+rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
+# predicting in test set
+predict_test <- predict(rf, test_reg, type = 'response')
+#confusion matrix  
+confusionMatrix(predict_test,test_reg$Risk_Flag)
+rf_cm <- table(test_reg$Risk_Flag, predict_test)
+xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
+
+```
+
+
+```{r, results='show'}
+missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
+print(paste('Random Forest Accuracy =', 1 - missing_classerr))
+```
+
+
+```{r, results='show'}
+test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
+rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
+auc(rf_h)
+plot(rf_h)
+
+```
+
+
+We've developed models manually, models with various selection, decision tree, and random forests. We compare all of our final models to determine which model is the best. We used the training data to develop our models and test the performance with the test dataset. Our goal was to identify defaulted and not defaulted, in our models positive class (not defaulted) greatly outnumber the negative class (defaulted). Intuitively we know that proclaiming all data being not defaulted isn't helpful and instead we should focus on identifying which cases are going to default, that's why accuracy was not a good measure for assessing model performance. We focus on the ROC_AUC,  precision, and recall rate to evaluate the model. We compromise our accuracy score of the model to obtain a better recall rate and precision. The reason we did this is to obtain a model which is able to predict not only true positive but also true negatives, and reducing the amount false negatives.
+
+Taking into consideration these parameters we determine the Decision Tree was the clear winner with the higher accuracy score, higher recall rate, second-highest precision, and second-highest ROC-AUC score.
+
+# What predictions can we make with our models
+
+
+
+# How reliable are our results
+
+Now that we've developed our models and have done some predictions, let's determine how reliable our models are, and if should be using them in a business context. 
+
+```{r,results='show'}
+performance_data <- matrix(c(manual_cm$byClass[1],bkwd_cm$byClass[1],fwd_cm$byClass[1],exh_bic_cm$byClass[1],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2]),manual_cm$byClass[2],bkwd_cm$byClass[2],fwd_cm$byClass[2],exh_bic_cm$byClass[2],cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2]),rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2]), manual_cm$byClass[5],bkwd_cm$byClass[5],fwd_cm$byClass[5],exh_bic_cm$byClass[5],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2]), manual_accuracy,bkwd_accuracy,fwd_accuracy,exh_bic_accuracy,accuracy_tune(tune_fit),1-missing_classerr, auc(h_manual), auc(bkwd_h), auc(fwd_h), auc(h_exh_bic), auc(dt_h), auc(rf_h)),ncol=6,byrow=TRUE)
+colnames(performance_data) <- c("Manual","Backward","Forward","Exhaustive","Decision Tree","Random Forest")
+rownames(performance_data) <- c("Sensitivity/Recall Rate","Specificity","Precision", "Accuracy", "ROC-AUC")
+performance_table <- as.table(performance_data)
+
+xkabledply(performance_table)
+```
+
+As we can see in this table, our forward selection method produced the highest sensitivity/recall-rate of `r fwd_cm$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our forward selection method had the lowest specificity at `r fwd_cm$byClass[2]`. For precision, our random forest model had the highest precision at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])` and our forward selection model had the lowest precision at `r fwd_cm$byClass[5]`.  
+
+
+In order to feel comfortable using this model in a business setting, we would need to see a far higher sensitivity rate. As a bank, it is okay if we accidentally predict some good customers as defaulting. Obviously we don't want to predict too many falsely in those regards, but it's far less costly than predicting a defaulting customer as non-defaulting. As a result, we would want a sensitivity rate in the 90s so that we're correctly predicting at elast 90% of the true defaulting customer correctly. However, based on our models above, the highest sensitivity we're seeing is `r fwd_cm$byClass[1]`, which is below our usable value here.  
+
+
+In terms of accuracy,  our decision tree model was the most accurate at  `raccuracy_tune(tune_fit)*100`%, while our forward selection model was the least accurate at `r fwd_accuracy *100`%. Lastly, our exhaustive model had the highest ROC-AUC value of `r auc(h_exh_bic)` while our manual regression and backward selection models jointly had the lowest ROC-AUC values of `r auc(h_manual)`.  
+
+
+Based on this information alone, we can say that all of our models are not reliable. All of them have low ROC-AUC values, far below the 0.8 threshold we would require to consider a model reliable, and, as mentioned earlier, all have too low of a sensitivity to even be considered.  
+
+
+While we could further consider the Hoslem and Lemshow Goodness of Fit, this wouldn't change our assumption of reliability. A good fit simply means that the coefficients are appropriate, but doesn't change the lack of predictive power in a useful manner. Likewise, we could use the McFadden pseudo $R^2$ values to assess how much variation in outcome is explained by our models, but again, this will not change our determination of lack of reliability in these models, so we will forgo those analyses here for sake of brevity.  
+
+
+
+# Ideal Next Steps
+
+Despite the lack of reliability in our models, there are some additional pieces of information that would allow us to improve our models or at least control the limitations. First would simply be additional variables. Some potential variables include loan amount, loan duration, loan type, etc. These would potentially help us classify our loans and give us more reliability within certian loan types, even if we can't necessarily get reliability in all loan types from the same model. This means we could create different models (even different types of models) for each loan structure to help assess risk within that.  
+
+
+Another variable that'd be helpful in our analysis would be gender. Gender is highly predictive of consumer loan behavior in the United States (and is illegal to use in these types of models due to discrimination laws). It would be interesting to determine if this variable is equally predictive in India.  
+
+
+Additional analysis that may allow these models to improve would be some sub classifications within the existing variables. For example, the variable profession had several thousand different inputs. If there were a way we could create an algorithm to classify the occupations of these consumers (ie into STEM jobs, self employed, manual labor, etc.), that may give us another angle to analyze consumers. Another option would be to again bucket the geography fields (city and state) to again bucket customers. In the United States, geography is a major risk predictor (primarily due to racial divisions and large scale economic impacts in regions such as natural disasters, minimum wage limits, single industry towns, etc) even though it is, much like gender, illegal to use for banking decisions. Creating categories such as urban or rural in our dataset would allow us to understand geographic impacts and take into consideration different living conditions for consumers in those regions. Like profession, however, there were too many inputs to manually create this field, so we'd need a geographical mapper tool or an algorithm to determine which consumer would be bucketed in each population.  
+
+
+Using these illegal variables would be more of an exercise in model development and allow us to build highly reliable models, but, at least in the United States, we would be unable to use such models in practice.  
+
+One last thing that would've helped is cloud computing capabilities. Running complex models such as decision trees and random forests is difficult on any laptop. We would love to run more complex and powerful version of the models that we created in the cloud with expansive processing power, but sadly our laptops are unable to handle models of that scale.  
+
+In terms of limitations in our dataset and analysis, because we had such imbalanced data, we had to be willing to sacrifice accuracy for sensitivity. Essentially we were able to obtain 87% accuracy instantly, solely by predicting 0 defaults. In banking, this is a constant challenge. For example, in fraud, we assume that 99% of transactions are not fraudulent and 1% are fraudulent. Any model developer looking purely at the numbers, would be thrilled to obtain a model with 99% accuracy. However, if the entire 1% inaccuracy is all of the fraudulent transactions, that creates major problems for the bank. So, we have to be willing to sacrifice some of that accuracy in order to actually solve the issue the model is being used for.  
+
+In our case, we want the model to predict defaulting customers at the time of application so that we can avoid lending to them in favor of someone who is predicted to not default. We'd rather turn down someone who falsely alerted as defaulting, than accept someone who false alerted as non defaulting. What this means is that we need to optimize our model for the highest accuracy under the constraint of maximizing sensitivity. Based on how logistic regression models work, we don't have that capability in an automated fashion. Ideally we would use some more complicated machine learning algorithsm to allow us to optimize under these constraints.
+
+One method to fix our impbalanced sample could be to use bootstrapping in order to increase the sample size of the defaulted population. This could work given that our defaulted sample is still fairly large, even if it represents a smaller portion of the data. However, doing this may skew the model into predicting more defaults and wouldn't give us a real sense of prediction power and reliability because we're using simulated data as our target.
+
+
+
+# References
+
+
+
+
+
+
+
+
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
