@@ -83,6 +83,40 @@ ALL FINAL MODEL VERSIONS NEED TO BE HERE
 
 ### Manual regression 
 
+Before we get into any of the analysis, we created a 75% training dataset and a 25% test dataset so that we can better understand how good our models will be in the future and not just on the data upon which they’re built.
+
+We started with a manual logistic regression based on EDA results to build a baseline with $\alpha$ = 0.05.
+
+Here are the steps how we gradually added/discarded variables until reaching to the final model.
+
+1. Risk_Flag ~ CURRENT_JOB_YRS
+2. Risk_Flag ~ Experience
+
+From these two model we found both of the independant variables very significant with p-vale <0.001. But standard error for experience was 0.00101, while for current job experience, it was 0.00167. That means, that although both variables are highly significant, overall years of job experience is slightly more, so we proceeded using that variable in our model.
+
+3. Risk_Flag ~ Experience + House_Ownership
+4. Risk_Flag ~ Experience + House_Ownership + Experience:House_Ownership
+
+After adding the interaction term, it was exceptionally insignificant, so we removed those and continued developing our model.
+
+5. Risk_Flag ~ Experience + House_Ownership + CURRENT_HOUSE_YRS
+
+Removed current house years as it was insignificant.
+
+6. Risk_Flag ~ Experience + House_Ownership + Age
+7. Risk_Flag ~ Experience + House_Ownership + Age + Experience:House_Ownership + Experience:Age + House_Ownership:Age
+
+From here we founded interaction between job experience and age was not significant, as well as the interaction between home ownership (Neither) and age was significant. Notably, the interaction between job experience and home ownership was still not significant and the interaction between home ownership (Owning) and age was not significant. However, since one of the two home ownership categorical variables was significant with age, we kept both in the model.
+
+8. Risk_Flag ~ Experience + House_Ownership + Age + House_Ownership:Age 
+9. Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age
+10. Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single
+11. Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + House_Ownership:Age + House_Ownership:Married.Single
+
+12. Final Model:
+Risk_Flag ~ Experience + House_Ownership + Income + Age + Married.Single + Car_Ownership + House_Ownership:Age + House_Ownership:Married.Single
+
+
 ```{r, results = 'show'}
 house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
 
@@ -95,6 +129,10 @@ auc(h_manual)
 plot(h_manual)
 ```
 
+When we aded in car ownership, we found that income becomes insignificant, while everything else remains significant. This means that knowing an individuals income or car ownership status is significant, but not both when we already know this other information. If we examine our AIC values, we see that when our model uses income, we have an AIC of 1.246^{5}, while our model that uses car ownership has an AIC of `r house_job_exp_age_limit_marital_income_car$aic`. Therefore, if we use AIC as our criteria of “goodness”, then our model using car ownership is the better model.
+
+If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the truly defaulting accounts as those who will default.
+
 ```{r, results='show'}
 manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 manual_cm
@@ -103,7 +141,30 @@ manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[
 
 ```
 
+```{r, results='show'}
+expcoeff = exp(coef(house_job_exp_age_limit_marital_income_car))
+# expcoeff
+xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Manual Logit Reg" )
+```
+
+In these interpretations, these odds ratio changes are true on average when holding all other variables constant in the model.
+
+
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experience lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
+
+For each additional year older someone is, we expect the odds ratio to decrease by `r expcoeff[5]` which corresponds to a decrease in default odds of `r (1-expcoeff[5])*100`%. This makes sense because of similar logic as experience. Going from single to married also decreases the odds ratio by `r expcoeff[6]` which corresponds to a decrease in default odds of `r (1-expcoeff[6])*100`%. The most likely explanation here is that going from single to married means that there are two incomes involved in paying off a loan or that the types of loans taken by married individuals are lower valued and get paid back more frequently. We don't have these variables in our model, unfortunately, so for now they remain speculation. Lastly, for our non-interaction terms, we see that going from not owning a car to owning a car shows an odds ratio decrease of `r expcoeff[7]` which corresponds to a decrease in default odds of `r (1-expcoeff[7])*100`%.
+
+Now, let's examine our interaction variables, which in a logistic regression correspond to a ratio of odds ratios. We're going to interpret these a little bit more loosely than our individual coefficients. For owning a home and age, our likelihood is approximately 1, where the older an individual is, the more impactful it is to start owning a home in terms of decreasing odds of default. Likewise, to move from renting to neither, the older an individual is, the likelier it is that they will default relative to a younger individual doing the same thing.
+
+Finally, moving from renting and single, or renting and married, or single to owning a home and being married, increases the odds ratio by `r expcoeff[11]` which corresponds to an increase in default odds of `r (expcoeff[11]-1)*100`%. One theory for why this may occur is that both owning a home and marriage are big commitments both in life and financially. As a result, it may be that taking on this much commitment at once, puts financial stress on the individual, and therefore increases the odds they default. However, moving from renting and single, or renting and married, or single to neither owning a home nor renting plus being married decreases the odds ratio by `r expcoeff[12]` which corresponds to a decrease in default odds of `r (1-expcoeff[12])*100`%.
+
+Now that we've developed a model manually that's statistically significant, but practically useless, let's see what happens if we use algorithms to try and build the model.
+
 ### Backward Selection 
+
+For the backward selection, we started with full model to null model on step() function with AIC and BIC as critarion. We found that model with AIC gradually discarded INCOME and CURRENT_HOUSE_YRS. Whereas BIC additionally discarded CURRENT_JOB_YEARS. As BIC is giving us more compact model we decided to go forward with that model.
+
+Final model by considering BIC:
 
 ```{r,results='show'}
 bkwd_bic_model <- glm(Risk_Flag ~ Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
@@ -117,6 +178,9 @@ bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
 auc(bkwd_h)
 ```
 
+The AUC is not that satisfactory at all.
+
+
 ```{r,results='show'}
 bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
 xkabledply(bkwd_cm$table)
@@ -124,7 +188,24 @@ bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkw
 bkwd_cm
 ```
 
+observing the confusion matrix, it seems this model is very good at predicting zero's but very bad at predicting the defaults.
+
+Let's find out the exponential of cofficients for this model
+
+```{r, results='markup'}
+expcoeff_bk = exp(coef(bkwd_bic_model))
+# expcoeff
+xkabledply( as.table(expcoeff_bk), title = "Exponential of coefficients in Backward Logit Reg" )
+```
+
+
+For each additional age increase, we expect the odds ratio to decrease by `r expcoeff_bk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[2])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_bk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[3])*100`%. If a customer owns a car then odds ratio to decrease by `r expcoeff_bk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[4])*100`%. Moving on to, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_bk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[5])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_bk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[6])*100`%. For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_bk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[7])*100`%. As expected since having more experience lowers the likelihood that a customer will not pay back their loan.
+
 ### Forward Selection
+
+For the forward selection, we started with the null model to the full model with AIC and BIC as criterion. AIC model gradually added Experience, House_ownership, car_ownership, Married.Single, Age, CURRENT_JOB_YRS. On the other hand, BIC model didn't include CURRENT_JOB_YRS.  As BIC is giving us more compact model we decided to go forward with that model.
+
+Final model by considering BIC:
 
 ```{r,results='show'}
 fwd_BIC_model <- glm(Risk_Flag ~ Experience + House_Ownership + Car_Ownership + Married.Single + Age, data = train_reg, family = "binomial")
@@ -139,6 +220,8 @@ fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
 auc(fwd_h)
 ```
 
+Again, this AUC score isn't that satisfactory.
+
 
 ```{r,results='show'}
 fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
@@ -146,6 +229,18 @@ xkabledply(fwd_cm$table)
 fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
 fwd_cm
 ```
+
+Now, from this confusion matrix we can see that this model is predicting defaults pretty well but not that good at predicting the not-defaults.
+
+Let's find out the exponential of coefficients for this model
+
+```{r, results='markup'}
+expcoeff_fk = exp(coef(fwd_BIC_model))
+# expcoeff
+xkabledply( as.table(expcoeff_fk), title = "Exponential of coefficients in Forward Logit Reg" )
+```
+
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_fk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[2])*100`%. if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_fk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[3])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_fk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[4])*100`%. Moving on to, if a customer owns a car then odds ratio to decrease by `r expcoeff_fk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[5])*100`%. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_fk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[6])*100`%. Finally, as age increases, we expect the odds ratio to decrease by `r expcoeff_fk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[7])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default.
 
 ### Exhaustive Selection
 
@@ -167,6 +262,8 @@ exh_bic_cm <- confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(t
 exh_bic_cm
 ```
 
+This exhaustive model is also not that good at predicting the defaults but pretty good at the not-defaults.
+
 ```{r,results='show'}
 exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
 exh_bic_accuracy
@@ -179,8 +276,14 @@ auc(h_exh_bic) # area-under-curve prefer 0.8 or higher.
 plot(h_exh_bic)
 
 ```
+Even though, the accuracy is good in this model, the AUC score is pretty bad.
 
 ###Decision tree 
+
+At first we tried to make the decision tree with the default parameter settings but it couldn't build a proper tree. It could only predict the zero's but had specificity of 0%.
+
+We built the final decision tree by tuning the minimum splits to 4 and minimum buckets to 2.
+
 ```{r,results='show'}
 accuracy_tune <- function(fit) {
     predict_unseen <- predict(fit, test_reg, type = 'class')
@@ -189,12 +292,13 @@ accuracy_tune <- function(fit) {
     accuracy_Test
 }
 control <- rpart.control(minsplit = 4,
-    minbucket = round(4 / 3),
+    minbucket = 2,
     maxdepth = 30,
     cp = 0)
 tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
 accuracy_tune(tune_fit)
 ```
+Now, this model has a good accuracy score and can predict both defaults and not-defaults.
 
 ```{r, results='show'}
 predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
@@ -213,6 +317,9 @@ auc(dt_h)
 plot(dt_h)
 
 ```
+
+Even though, this model is predicting decently, its AUC score is only 0.53 which indicates it not a good model.
+
 
 ### Random Forest 
 
@@ -242,6 +349,8 @@ auc(rf_h)
 plot(rf_h)
 
 ```
+
+Random forest was our last model to analyze on. We found the accuracy is pretty decent but again the AUC is not that great. But this was highest AUC among all.
 
 
 We've developed models manually, models with various selection, decision tree, and random forests. We compare all of our final models to determine which model is the best. We used the training data to develop our models and test the performance with the test dataset. Our goal was to identify defaulted and not defaulted, in our models positive class (not defaulted) greatly outnumber the negative class (defaulted). Intuitively we know that proclaiming all data being not defaulted isn't helpful and instead we should focus on identifying which cases are going to default, that's why accuracy was not a good measure for assessing model performance. We focus on the ROC_AUC,  precision, and recall rate to evaluate the model. We compromise our accuracy score of the model to obtain a better recall rate and precision. The reason we did this is to obtain a model which is able to predict not only true positive but also true negatives, and reducing the amount false negatives.
