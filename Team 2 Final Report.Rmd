@@ -55,6 +55,8 @@ loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
 #Create summary table of remaining variables
 xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
 #Selecting only values where the customer defaulted
+
+loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
 defaulted <- subset(loandata, Risk_Flag == 1)
 #Selecting only values where the customer did not default
 not_defaulted <- subset(loandata, Risk_Flag == 0)
@@ -62,7 +64,7 @@ not_defaulted <- subset(loandata, Risk_Flag == 0)
 
 ```{r}
 #Split data into Test and Train (75%-25%)
-loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+
 set.seed(123)
 split <- sample.split(loandata, SplitRatio = 0.75)
 # split
@@ -72,11 +74,70 @@ test_reg <- subset(loandata, split == "FALSE")
 ```
 
 # Exploratory Data Analysis
-INSERT ANALYSIS HERE
+
+In our previous report, we conducted some exploratory data analysis (EDA) and determined that there were significant differences between those who defaulted on their loans and those who didn't in terms of home-ownership status, marital status, years of home-ownership, job experience, years of experience in current job, and age. Notably, we did not see a significant difference in income levels between the two populations.  
+
+Our first step was to divide the data into two subsets, 'defaulted' and 'not-defaulted' and conducted 2-sample T-tests and Chi-Square Tests to compare the different characteristics that could impact the default status of a customer. 
+
+```{r, results='hide'}
+ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income, alternative = 'less')
+#Output results
+ttest2sample_incomes
+```
+
+From the EDA, we discovered that there is not enough evidence to state that the customers who default on loans have lower incomes than those who do not. Our analysis showed the not-defaulted customers had an average income of `r mean(not_defaulted$Income)` and the average income of defaulted customers at:  `r mean(defaulted$Income)`. We further analyzed the average incomes of both the groups using a 2-Sample T-Test, where we failed to reject our Null Hypothesis and were not able to prove that the averages were significantly different.  
 
 
-In our previous report, we conducted some exploratory data analysis (EDA) and determined that there were significant differences between those who defaulted on their loans and those who didn't in terms of home-ownership status, marital status, years of home-ownership, job experience, years of experience in current job, and age. Notably, we did not see a significant difference in income levels between the two populations.
+```{r, results='hide'}
+#contigeny table
+contable_housing = table(loandata$House_Ownership, loandata$Risk_Flag)
+xkabledply(contable_housing, title = 'Contigency table for Risk Flag vs House Ownership ')
+```
+```{r, results='hide'}
 
+chitest_housing = chisq.test(contable_housing)
+
+#To output results
+chitest_housing
+```
+
+Using Chi-Square Test, we were able to see that Home Ownership and Default status were dependent on each other. At p-value: `r chitest_housing$p.value`, (with $\alpha$ at 0.05), we were able to reject our Null Hypothesis that Home Ownership and Default status were independent and adopt the alternate that there was a significant dependence on each other.  
+
+```{r, results='hide'}
+contable_marital = table(loandata$Married.Single, loandata$Risk_Flag)
+xkabledply(contable_marital, title = 'Contigency table for Risk Flag vs Marital Status ')
+```
+
+```{r, results='hide'}
+chitest_marital = chisq.test(contable_marital)
+chitest_marital
+```
+
+We also used the Chi-Square Test, to determine if Default Status was dependent on the customer's marital status. With a p-value: `r chitest_marital$p.value`, we were able to reject our Null Hypothesis of these two characteristics being independent and adopted the alternative as we see a significant dependency on each other. 
+
+```{r, results='hide'}
+ttest2sample_currentHome = t.test(defaulted$CURRENT_HOUSE_YRS, not_defaulted$CURRENT_HOUSE_YRS, alternative = 'less')
+#Output results
+ttest2sample_currentHome
+```
+
+From the EDA, we could not confirm if an additional year of home-ownership reduces the likelihood of default, however from the 2-Sample T-Test, we were able to state that statistically, the average number of years in the current house for someone who has defaulted is significantly less than for someone who did not default.  
+
+
+```{r, results='hide'}
+ttest2sample_experience <- t.test(defaulted$Experience, not_defaulted$Experience, alternative = "two.sided")
+#Output results
+ttest2sample_experience
+```
+
+From our EDA, we also compared the average years of job experience for the two groups, and our analysis showed the not-defaulted customers had an average job experience of `r mean(not_defaulted$Experience)` years and the average years of job experience for defaulted customers was at,  `r mean(defaulted$Experience)`. This didn't show us much difference, however as we analyzed this further with a 2-Sample T-Test. With a p-value of `r format(ttest2sample_experience$p.value, scientific=TRUE, digits = 3)` we were able to reject the null hypothesis and adopted the alternate hypothesis $H_1$. Therefore, we could state that at an $\alpha$ = 0.05 level, the years of experience for someone who has defaulted differs significantly from the years of experience for someone who has not-defaulted. 
+
+```{r, results='hide'}
+ttest2sample_age <- t.test(defaulted$Age, not_defaulted$Age, alternative = 'less')
+ttest2sample_age
+```
+
+When we looked at the average age for the two groups, our EDA showed `r mean(not_defaulted$Age)` years for the not-defaulted, and the average age for defaulted customers at, `r mean(defaulted$Age)`.This was a very minimal difference in the age for customers who defaulted vs who did not. We further analyzed using a 2-Sample T-tests. With our p-value at `r format(ttest2sample_age$p.value, scientific=TRUE, digits = 3)` was less than our $\alpha$=0.05, we were able to reject the null hypothesis in favor of the alternate, and could state that statistically, the average age of those who defaulted is significantly lower than the average age of customers who did not.
 
 # How did we select and determine the correct model
 ALL FINAL MODEL VERSIONS NEED TO BE HERE
