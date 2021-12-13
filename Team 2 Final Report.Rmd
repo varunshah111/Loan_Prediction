@@ -139,21 +139,21 @@ ttest2sample_age
 
 When we looked at the average age for the two groups, our EDA showed `r mean(not_defaulted$Age)` years for the not-defaulted, and the average age for defaulted customers at, `r mean(defaulted$Age)`.This was a very minimal difference in the age for customers who defaulted vs who did not. We further analyzed using a 2-Sample T-tests. With our p-value at `r format(ttest2sample_age$p.value, scientific=TRUE, digits = 3)` was less than our $\alpha$=0.05, we were able to reject the null hypothesis in favor of the alternate, and could state that statistically, the average age of those who defaulted is significantly lower than the average age of customers who did not.
 
-# How did we select and determine the correct model
-ALL FINAL MODEL VERSIONS NEED TO BE HERE
+# Model Selection
+
 
 ### Manual regression 
 
 Before we get into any of the analysis, we created a 75% training dataset and a 25% test dataset so that we can better understand how good our models will be in the future and not just on the data upon which they’re built.
 
-We started with a manual logistic regression based on EDA results to build a baseline with $\alpha$ = 0.05.
+We started with a manual logistic regression based on EDA results to build a baseline. All models utilize $\alpha$ = 0.05.
 
-Here are the steps how we gradually added/discarded variables until reaching to the final model.
+Here are the steps for how we gradually added/discarded variables until reaching to the final model.
 
 1. Risk_Flag ~ CURRENT_JOB_YRS
 2. Risk_Flag ~ Experience
 
-From these two model we found both of the independant variables very significant with p-vale <0.001. But standard error for experience was 0.00101, while for current job experience, it was 0.00167. That means, that although both variables are highly significant, overall years of job experience is slightly more, so we proceeded using that variable in our model.
+From these two model we found both of the independent variables very significant with p-vale <0.001. But standard error for experience was 0.00101, while for current job experience, it was 0.00167. That means, that although both variables are highly significant, overall years of job experience is slightly more, so we proceeded using that variable in our model.
 
 3. Risk_Flag ~ Experience + House_Ownership
 4. Risk_Flag ~ Experience + House_Ownership + Experience:House_Ownership
@@ -365,7 +365,7 @@ Now, this model has a good accuracy score and can predict both defaults and not-
 predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
 cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
 xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
-confusionMatrix(predict_dt_test_tune,test_reg$Risk_Flag)
+dt_confusion <- confusionMatrix(predict_dt_test_tune,test_reg$Risk_Flag)
 
 ```
 
@@ -390,7 +390,9 @@ rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
 # predicting in test set
 predict_test <- predict(rf, test_reg, type = 'response')
 #confusion matrix  
-confusionMatrix(predict_test,test_reg$Risk_Flag,positive ='1')
+
+
+rf_confusion <- confusionMatrix(predict_test,test_reg$Risk_Flag,positive ='1')
 rf_cm <- table( predict_test,test_reg$Risk_Flag)
 xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
 
@@ -427,18 +429,19 @@ Taking into consideration these parameters we determine the Decision Tree was th
 Now that we've developed our models and have done some predictions, let's determine how reliable our models are, and if should be using them in a business context. 
 
 ```{r,results='show'}
-performance_data <- matrix(c(manual_cm$byClass[1],bkwd_cm$byClass[1],fwd_cm$byClass[1],exh_bic_cm$byClass[1],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[2:2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2]),manual_cm$byClass[2],bkwd_cm$byClass[2],fwd_cm$byClass[2],exh_bic_cm$byClass[2],cmdtt[1:1]/(cmdtt[1:1]+cmdtt[1,2]),rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2]), manual_cm$byClass[5],bkwd_cm$byClass[5],fwd_cm$byClass[5],exh_bic_cm$byClass[5],cmdtt[4:4]/(cmdtt[4:4]+cmdtt[1,2]),rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2]), manual_accuracy,bkwd_accuracy,fwd_accuracy,exh_bic_accuracy,accuracy_tune(tune_fit),1-missing_classerr, auc(h_manual), auc(bkwd_h), auc(fwd_h), auc(h_exh_bic), auc(dt_h), auc(rf_h)),ncol=6,byrow=TRUE)
+performance_data <- matrix(c(manual_cm$byClass[1],bkwd_cm$byClass[1],fwd_cm$byClass[1],exh_bic_cm$byClass[1],dt_confusion$byClass[1],rf_confusion$byClass[1],manual_cm$byClass[2],bkwd_cm$byClass[2],fwd_cm$byClass[2],exh_bic_cm$byClass[2],dt_confusion$byClass[2],rf_confusion$byClass[2], manual_cm$byClass[5],bkwd_cm$byClass[5],fwd_cm$byClass[5],exh_bic_cm$byClass[5],dt_confusion$byClass[5],rf_confusion$byClass[5], manual_accuracy,bkwd_accuracy,fwd_accuracy,exh_bic_accuracy,accuracy_tune(tune_fit),1-missing_classerr, auc(h_manual), auc(bkwd_h), auc(fwd_h), auc(h_exh_bic), auc(dt_h), auc(rf_h)),ncol=6,byrow=TRUE)
 colnames(performance_data) <- c("Manual","Backward","Forward","Exhaustive","Decision Tree","Random Forest")
 rownames(performance_data) <- c("Sensitivity/Recall Rate","Specificity","Precision", "Accuracy", "ROC-AUC")
 performance_table <- as.table(performance_data)
 
 xkabledply(performance_table)
+
 ```
 
-As we can see in this table, our forward selection method produced the highest sensitivity/recall-rate of `r fwd_cm$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our forward selection method had the lowest specificity at `r fwd_cm$byClass[2]`. For precision, our random forest model had the highest precision at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[1,2])` and our forward selection model had the lowest precision at `r fwd_cm$byClass[5]`.  
+As we can see in this table, our decision tree model produced the highest sensitivity/recall-rate of `r dt_confusion$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our forward selection method had the lowest specificity at `r fwd_cm$byClass[2]`. For precision, our decision tree model had the highest precision at `r dt_confusion$byClass[5]` and our forward selection model had the lowest precision at `r fwd_cm$byClass[5]`.  
 
 
-In order to feel comfortable using this model in a business setting, we would need to see a far higher sensitivity rate. As a bank, it is okay if we accidentally predict some good customers as defaulting. Obviously we don't want to predict too many falsely in those regards, but it's far less costly than predicting a defaulting customer as non-defaulting. As a result, we would want a sensitivity rate in the 90s so that we're correctly predicting at elast 90% of the true defaulting customer correctly. However, based on our models above, the highest sensitivity we're seeing is `r fwd_cm$byClass[1]`, which is below our usable value here.  
+In order to feel comfortable using this model in a business setting, we would need to see a high sensitivity rate. As a bank, it is okay if we accidentally predict some good customers as defaulting. Obviously we don't want to predict too many falsely in those regards, but it's far less costly than predicting a defaulting customer as non-defaulting. As a result, we would want a sensitivity rate in the 90s so that we're correctly predicting at elast 90% of the true defaulting customer correctly. Fortunately, the highest sensitivity we're seeing is `r dt_confusion$byClass[1]`, which is within our usable value range, but we would also want to see the accuracy and ROC-AUC before making a firm decision on reliability.  
 
 
 In terms of accuracy,  our decision tree model was the most accurate at  `raccuracy_tune(tune_fit)*100`%, while our forward selection model was the least accurate at `r fwd_accuracy *100`%. Lastly, our exhaustive model had the highest ROC-AUC value of `r auc(h_exh_bic)` while our manual regression and backward selection models jointly had the lowest ROC-AUC values of `r auc(h_manual)`.  
@@ -475,15 +478,9 @@ One method to fix our impbalanced sample could be to use bootstrapping in order 
 
 
 # References
+Durkheimer, M. (2019, August 22). Millennial men more likely than women to default on student debt. Forbes. Retrieved November 5, 2021, from https://www.forbes.com/sites/michaeldurkheimer/2017/09/25/millennial-men-more-likely-than-women-to-default-on-student-debt/?sh=4d8ba5089ea8.  
 
+Herron, J. (2014, April 4). Men, women and debt: Does gender matter? Bankrate. Retrieved November 7, 2021, from https://www.bankrate.com/personal-finance/debt/men-women-and-debt-does-gender-matter/.  
 
+Surana, S. (2021, August 15). Loan Prediction Based on Customer Behavior | Kaggle. Kaggle. Retrieved November 8, 2021, from https://www.kaggle.com/subhamjain/loan-prediction-based-on-customer-behavior/discussion.
 
-
-
-
-
-
-
-
-
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
