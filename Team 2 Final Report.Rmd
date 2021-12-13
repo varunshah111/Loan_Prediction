@@ -339,7 +339,7 @@ plot(h_exh_bic)
 ```
 Even though, the accuracy is good in this model, the AUC score is pretty bad.
 
-###Decision tree 
+### Decision tree 
 
 At first we tried to make the decision tree with the default parameter settings but it couldn't build a proper tree. It could only predict the zero's but had specificity of 0%.
 
@@ -390,8 +390,8 @@ rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
 # predicting in test set
 predict_test <- predict(rf, test_reg, type = 'response')
 #confusion matrix  
-confusionMatrix(predict_test,test_reg$Risk_Flag)
-rf_cm <- table(test_reg$Risk_Flag, predict_test)
+confusionMatrix(predict_test,test_reg$Risk_Flag,positive ='1')
+rf_cm <- table( predict_test,test_reg$Risk_Flag)
 xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
 
 ```
