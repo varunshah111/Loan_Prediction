@@ -422,6 +422,86 @@ Taking into consideration these parameters we determine the Decision Tree was th
 
 # What predictions can we make with our models
 
+With our decision tree model with can predicted if the customer will pay their loans or default the loan in a variety of scenarios. 
+
+### First scenario: 
+
+Married and Single Customers , RENTING a household with NO CAR ownership with an AVERAGE INCOME
+
+```{r,results='show'}
+
+#tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
+
+newdata1 <- with(loandata, data.frame(Income = mean(Income) ,Age = mean(Age), Experience = round(mean(Experience)) , Married.Single = c('Single','Married'), House_Ownership = 'Renting', Car_Ownership = 'No' , CURRENT_JOB_YRS = round(mean(CURRENT_JOB_YRS)), CURRENT_HOUSE_YRS = round(mean(CURRENT_HOUSE_YRS))))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+
+newdata1
+```
+
+For customers with single and married status with a rented household ,no car ownership, and with an average income the prediction in our model is that they wont defaulted. 
+
+
+### Second Scenario: 
+
+Married and Single Customers, RENTING with a minimum yearly salary in their 30s with NO CAR
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  70000,Age = 30, Experience = round(mean(Experience)) , Married.Single = c('Single','Married'), House_Ownership = 'Renting', Car_Ownership = 'No' , CURRENT_JOB_YRS = round(mean(CURRENT_JOB_YRS)), CURRENT_HOUSE_YRS = round(mean(CURRENT_HOUSE_YRS))))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+
+
+According to our decision tree, if you are in your 30s with low income and no car, it doesnt matter if you are married or single you will most likely default the loan. *(70,000Rs is minimun yearly salary)
+
+
+### Third Scenario: 
+
+Married and Single Customers with a MINIMUM yearly salary in their 30s with a CAR
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  70000,Age = 30, Experience = round(mean(Experience)) , Married.Single = 'Married', House_Ownership = 'Renting', Car_Ownership = 'Yes' , CURRENT_JOB_YRS = round(mean(CURRENT_JOB_YRS)), CURRENT_HOUSE_YRS = round(mean(CURRENT_HOUSE_YRS))))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+
+According to our decision tree, if you are married in your 30s with low income with a car ownership, you will most likely not default the loan. This is very interesting which shows how being married with a car can change the prediction of our model. 
+
+### Fourth Scenario:
+
+Single customer, right out of the college with NO EXPERIENCE with a CAR and an average INCOME
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  mean(loandata$Income),Age = 23, Experience = 0 , Married.Single = 'Single', House_Ownership = 'Renting', Car_Ownership = 'Yes' , CURRENT_JOB_YRS = 0, CURRENT_HOUSE_YRS = 1))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+Our model is predicting if you have an average income right out of college with no experience you will most likely default the loan. *(the average salary in our dataset is 5,000,000Rs)
+
+### Fifth Scenario:
+
+Single young adult customer, MINIMUM EXPERIENCE with CAR and an AVERAGE INCOME a.k.a Ricardo Diaz 
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  mean(loandata$Income),Age = 26, Experience = 2 , Married.Single = 'Single', House_Ownership = 'Renting', Car_Ownership = 'Yes' , CURRENT_JOB_YRS = 2, CURRENT_HOUSE_YRS = 1))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+
+According to the model, with my experience , renting a property, with car ownership and an average income. The member of this group, Ricardo Diaz, its most likely to default the loan. The model clearly doesnt know Ricardo is pursuing a master in Data Science. 
 
 
 # How reliable are our results
