@@ -422,7 +422,7 @@ Taking into consideration these parameters we determine the Decision Tree was th
 
 # What predictions can we make with our models
 
-With our decision tree model with can predicted if the customer will pay their loans or default the loan in a variety of scenarios. 
+With our decision tree model we can predict if the customer will pay their loans or default the loan in a variety of scenarios. We will present 5 scenarios.
 
 ### First scenario: 
 
@@ -456,7 +456,7 @@ newdata1
 ```
 
 
-According to our decision tree, if you are in your 30s with low income and no car, it doesnt matter if you are married or single you will most likely default the loan. *(70,000Rs is minimun yearly salary)
+According to our decision tree, if you are in your 30s with low income and no car, it doesnt matter if you are married or single you will most likely default the loan. *(70,000Rs is India minimun yearly salary)
 
 
 ### Third Scenario: 
@@ -472,7 +472,7 @@ newdata1
 
 ```
 
-According to our decision tree, if you are married in your 30s with low income with a car ownership, you will most likely not default the loan. This is very interesting which shows how being married with a car can change the prediction of our model. 
+According to our decision tree, if you are married in your 30s with minimun yearly income with a car ownership, you will most likely not default the loan. This is very interesting which shows how being married and having a car can change the prediction of our model. 
 
 ### Fourth Scenario:
 
@@ -486,7 +486,7 @@ newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
 newdata1
 
 ```
-Our model is predicting if you have an average income right out of college with no experience you will most likely default the loan. *(the average salary in our dataset is 5,000,000Rs)
+Our model is predicting if you have an average income right out of college with no job experience you will most likely default the loan. *(the average salary in our dataset is 5,000,000Rs)
 
 ### Fifth Scenario:
 
