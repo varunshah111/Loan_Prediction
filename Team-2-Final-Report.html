@@ -1207,7 +1207,7 @@ auc(rf_h)</code></pre>
 </div>
 <div id="what-predictions-can-we-make-with-our-models" class="section level1">
 <h1>What predictions can we make with our models</h1>
-<p>With our decision tree model with can predicted if the customer will pay their loans or default the loan in a variety of scenarios.</p>
+<p>With our decision tree model we can predict if the customer will pay their loans or default the loan in a variety of scenarios. We will present 5 scenarios.</p>
 <div id="first-scenario" class="section level3">
 <h3>First scenario:</h3>
 <p>Married and Single Customers , RENTING a household with NO CAR ownership with an AVERAGE INCOME</p>
@@ -1239,7 +1239,7 @@ newdata1</code></pre>
 ##   CURRENT_JOB_YRS CURRENT_HOUSE_YRS Risk_Flag
 ## 1               6                12         1
 ## 2               6                12         1</code></pre>
-<p>According to our decision tree, if you are in your 30s with low income and no car, it doesnt matter if you are married or single you will most likely default the loan. *(70,000Rs is minimun yearly salary)</p>
+<p>According to our decision tree, if you are in your 30s with low income and no car, it doesnt matter if you are married or single you will most likely default the loan. *(70,000Rs is India minimun yearly salary)</p>
 </div>
 <div id="third-scenario" class="section level3">
 <h3>Third Scenario:</h3>
@@ -1252,7 +1252,7 @@ newdata1</code></pre>
 ## 1  70000  30         10        Married         Renting           Yes
 ##   CURRENT_JOB_YRS CURRENT_HOUSE_YRS Risk_Flag
 ## 1               6                12         0</code></pre>
-<p>According to our decision tree, if you are married in your 30s with low income with a car ownership, you will most likely not default the loan. This is very interesting which shows how being married with a car can change the prediction of our model.</p>
+<p>According to our decision tree, if you are married in your 30s with minimun yearly income with a car ownership, you will most likely not default the loan. This is very interesting which shows how being married and having a car can change the prediction of our model.</p>
 </div>
 <div id="fourth-scenario" class="section level3">
 <h3>Fourth Scenario:</h3>
@@ -1265,7 +1265,7 @@ newdata1</code></pre>
 ## 1  5e+06  23          0         Single         Renting           Yes
 ##   CURRENT_JOB_YRS CURRENT_HOUSE_YRS Risk_Flag
 ## 1               0                 1         1</code></pre>
-<p>Our model is predicting if you have an average income right out of college with no experience you will most likely default the loan. *(the average salary in our dataset is 5,000,000Rs)</p>
+<p>Our model is predicting if you have an average income right out of college with no job experience you will most likely default the loan. *(the average salary in our dataset is 5,000,000Rs)</p>
 </div>
 <div id="fifth-scenario" class="section level3">
 <h3>Fifth Scenario:</h3>
