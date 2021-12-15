@@ -1,0 +1,566 @@
+---
+title: "Final Project Team 2"
+authors: "By: Cooper, Nusrat, Ricardo, and Varun"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+    number_sections: false
+    toc: yes
+    toc_depth: 3
+    toc_float: yes
+  pdf_document:
+    toc: yes
+    toc_depth: '3'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r init, include=FALSE}
+# some of common options (and the defaults) are:
+# include=T, eval=T, echo=T, results='hide'/'asis'/'markup',..., collapse=F, warning=T, message=T, error=T, cache=T, fig.width=6, fig.height=4, fig.dim=c(6,4) #inches, fig.align='left'/'center','right',
+library(ezids)
+library(dplyr)
+library(lmtest)
+library(vcd)
+library(bestglm)
+library(caTools)
+library(car)
+library(pROC)
+library(caret)
+library(regclass)
+library(ResourceSelection)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+# knitr::opts_chunk$set(warning = F, results = "markup", message = F)
+knitr::opts_chunk$set(warning = F, results = "hide", message = F)
+options(scientific=T, digits = 3)
+# options(scipen=9, digits = 3)
+# use scipen=999 to prevent scientific notation at all times
+```
+
+```{r loanpredict}
+#Import dataset
+loanpredict <- read.csv("Training Data.csv", header = TRUE)
+str(loanpredict)
+#Convert necessary variables to factors/categoricals and set appropriate level titles
+loanpredict$Married.Single <- recode_factor(loanpredict$Married.Single, single = "Single", married = "Married")
+loanpredict$House_Ownership <- recode_factor(loanpredict$House_Ownership, rented = "Renting", owned = "Owning", norent_noown = "Neither")
+loanpredict$Car_Ownership <- recode_factor(loanpredict$Car_Ownership, no = "No", yes = "Yes")
+#Remove variables that won't help in our analysis
+loandata <- subset(loanpredict, select = -c(Id, CITY, STATE, Profession))
+#Create summary table of remaining variables
+xkablesummary(loandata, title = "Summary Statistics for Loan Default Prediction")
+#Selecting only values where the customer defaulted
+
+loandata$Risk_Flag <- as.factor(loandata$Risk_Flag)
+defaulted <- subset(loandata, Risk_Flag == 1)
+#Selecting only values where the customer did not default
+not_defaulted <- subset(loandata, Risk_Flag == 0)
+```
+
+```{r}
+#Split data into Test and Train (75%-25%)
+
+set.seed(123)
+split <- sample.split(loandata, SplitRatio = 0.75)
+# split
+
+train_reg <- subset(loandata, split == "TRUE")
+test_reg <- subset(loandata, split == "FALSE")
+```
+
+# Exploratory Data Analysis
+
+In our previous report, we conducted some exploratory data analysis (EDA) and determined that there were significant differences between those who defaulted on their loans and those who didn't in terms of home-ownership status, marital status, years of home-ownership, job experience, years of experience in current job, and age. Notably, we did not see a significant difference in income levels between the two populations.  
+
+Our first step was to divide the data into two subsets, 'defaulted' and 'not-defaulted' and conducted 2-sample T-tests and Chi-Square Tests to compare the different characteristics that could impact the default status of a customer. 
+
+```{r, results='hide'}
+ttest2sample_incomes = t.test(defaulted$Income, not_defaulted$Income, alternative = 'less')
+#Output results
+ttest2sample_incomes
+```
+
+From the EDA, we discovered that there is not enough evidence to state that the customers who default on loans have lower incomes than those who do not. Our analysis showed the not-defaulted customers had an average income of `r mean(not_defaulted$Income)` and the average income of defaulted customers at:  `r mean(defaulted$Income)`. We further analyzed the average incomes of both the groups using a 2-Sample T-Test, where we failed to reject our Null Hypothesis and were not able to prove that the averages were significantly different.  
+
+
+```{r, results='hide'}
+#contigeny table
+contable_housing = table(loandata$House_Ownership, loandata$Risk_Flag)
+xkabledply(contable_housing, title = 'Contigency table for Risk Flag vs House Ownership ')
+```
+```{r, results='hide'}
+
+chitest_housing = chisq.test(contable_housing)
+
+#To output results
+chitest_housing
+```
+
+Using Chi-Square Test, we were able to see that Home Ownership and Default status were dependent on each other. At p-value: `r chitest_housing$p.value`, (with $\alpha$ at 0.05), we were able to reject our Null Hypothesis that Home Ownership and Default status were independent and adopt the alternate that there was a significant dependence on each other.  
+
+```{r, results='hide'}
+contable_marital = table(loandata$Married.Single, loandata$Risk_Flag)
+xkabledply(contable_marital, title = 'Contigency table for Risk Flag vs Marital Status ')
+```
+
+```{r, results='hide'}
+chitest_marital = chisq.test(contable_marital)
+chitest_marital
+```
+
+We also used the Chi-Square Test, to determine if Default Status was dependent on the customer's marital status. With a p-value: `r chitest_marital$p.value`, we were able to reject our Null Hypothesis of these two characteristics being independent and adopted the alternative as we see a significant dependency on each other. 
+
+```{r, results='hide'}
+ttest2sample_currentHome = t.test(defaulted$CURRENT_HOUSE_YRS, not_defaulted$CURRENT_HOUSE_YRS, alternative = 'less')
+#Output results
+ttest2sample_currentHome
+```
+
+From the EDA, we could not confirm if an additional year of home-ownership reduces the likelihood of default, however from the 2-Sample T-Test, we were able to state that statistically, the average number of years in the current house for someone who has defaulted is significantly less than for someone who did not default.  
+
+
+```{r, results='hide'}
+ttest2sample_experience <- t.test(defaulted$Experience, not_defaulted$Experience, alternative = "two.sided")
+#Output results
+ttest2sample_experience
+```
+
+From our EDA, we also compared the average years of job experience for the two groups, and our analysis showed the not-defaulted customers had an average job experience of `r mean(not_defaulted$Experience)` years and the average years of job experience for defaulted customers was at,  `r mean(defaulted$Experience)`. This didn't show us much difference, however as we analyzed this further with a 2-Sample T-Test. With a p-value of `r format(ttest2sample_experience$p.value, scientific=TRUE, digits = 3)` we were able to reject the null hypothesis and adopted the alternate hypothesis $H_1$. Therefore, we could state that at an $\alpha$ = 0.05 level, the years of experience for someone who has defaulted differs significantly from the years of experience for someone who has not-defaulted. 
+
+```{r, results='hide'}
+ttest2sample_age <- t.test(defaulted$Age, not_defaulted$Age, alternative = 'less')
+ttest2sample_age
+```
+
+When we looked at the average age for the two groups, our EDA showed `r mean(not_defaulted$Age)` years for the not-defaulted, and the average age for defaulted customers at, `r mean(defaulted$Age)`.This was a very minimal difference in the age for customers who defaulted vs who did not. We further analyzed using a 2-Sample T-tests. With our p-value at `r format(ttest2sample_age$p.value, scientific=TRUE, digits = 3)` was less than our $\alpha$=0.05, we were able to reject the null hypothesis in favor of the alternate, and could state that statistically, the average age of those who defaulted is significantly lower than the average age of customers who did not.
+
+# Model Selection
+
+
+### Manual regression 
+
+Before we get into any of the analysis, we created a 75% training dataset and a 25% test dataset so that we can better understand how good our models will be in the future and not just on the data upon which they’re built.
+
+We started with a manual logistic regression based on EDA results to build a baseline. All models utilize $\alpha$ = 0.05.
+
+Here are the steps for how we gradually added/discarded variables until reaching to the final model.
+
+1. Risk_Flag ~ CURRENT_JOB_YRS
+2. Risk_Flag ~ Experience
+
+From these two model we found both of the independent variables very significant with p-vale <0.001. But standard error for experience was 0.00101, while for current job experience, it was 0.00167. That means, that although both variables are highly significant, overall years of job experience is slightly more, so we proceeded using that variable in our model.
+
+3. Risk_Flag ~ Experience + House_Ownership
+4. Risk_Flag ~ Experience + House_Ownership + Experience:House_Ownership
+
+After adding the interaction term, it was exceptionally insignificant, so we removed those and continued developing our model.
+
+5. Risk_Flag ~ Experience + House_Ownership + CURRENT_HOUSE_YRS
+
+Removed current house years as it was insignificant.
+
+6. Risk_Flag ~ Experience + House_Ownership + Age
+7. Risk_Flag ~ Experience + House_Ownership + Age + Experience:House_Ownership + Experience:Age + House_Ownership:Age
+
+From here we founded interaction between job experience and age was not significant, as well as the interaction between home ownership (Neither) and age was significant. Notably, the interaction between job experience and home ownership was still not significant and the interaction between home ownership (Owning) and age was not significant. However, since one of the two home ownership categorical variables was significant with age, we kept both in the model.
+
+8. Risk_Flag ~ Experience + House_Ownership + Age + House_Ownership:Age 
+9. Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age
+10. Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + House_Ownership:Age + Experience:Married.Single + House_Ownership:Married.Single + Age:Married.Single
+11. Risk_Flag ~ Experience + House_Ownership + Age + Married.Single + Income + House_Ownership:Age + House_Ownership:Married.Single
+
+12. Final Model:
+Risk_Flag ~ Experience + House_Ownership + Income + Age + Married.Single + Car_Ownership + House_Ownership:Age + House_Ownership:Married.Single
+
+
+```{r, results = 'show'}
+house_job_exp_age_limit_marital_income_car <- glm(Risk_Flag ~ Experience + House_Ownership + Age + Married.Single  + Car_Ownership  + House_Ownership:Age + House_Ownership:Married.Single, data = train_reg, family = 'binomial')
+
+summary(house_job_exp_age_limit_marital_income_car)
+
+prob_predict_manual <- predict(house_job_exp_age_limit_marital_income_car, test_reg, type='response')
+test_reg$prob_manual <- ifelse(prob_predict_manual > 0.145,1,0)
+h_manual <- roc(Risk_Flag ~ prob_manual, data = test_reg)
+auc(h_manual)
+plot(h_manual)
+```
+
+When we aded in car ownership, we found that income becomes insignificant, while everything else remains significant. This means that knowing an individuals income or car ownership status is significant, but not both when we already know this other information. If we examine our AIC values, we see that when our model uses income, we have an AIC of 1.246^{5}, while our model that uses car ownership has an AIC of `r house_job_exp_age_limit_marital_income_car$aic`. Therefore, if we use AIC as our criteria of “goodness”, then our model using car ownership is the better model.
+
+If we use an ROC-AUC to analyze the model fit, we get that the AUC is `r auc(h_manual)` which is lower than our desired 0.8 value for usefulness This means that although our model itself is highly significant, it isn't particularly useful as a predictor. Our model predicts `r sum(loandata$prob_manual==1)` defaults, while in reality we have `r sum(loandata$Risk_Flag==1)` defaults in our dataset. These numbers would suggest we're predicting an appropriate proportion of defaults, but if we examine the below confusion matrix, we'll see that we're not predicting the truly defaulting accounts as those who will default.
+
+```{r, results='show'}
+manual_cm <- confusionMatrix(as.factor(test_reg$prob_manual), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+manual_cm
+xkabledply(manual_cm$table)
+manual_accuracy <- (manual_cm$table[4:4]+manual_cm$table[1:1])/(manual_cm$table[4:4]+manual_cm$table[1:1]+manual_cm$table[2:2]+manual_cm$table[3:3])
+
+```
+
+```{r, results='show'}
+expcoeff = exp(coef(house_job_exp_age_limit_marital_income_car))
+# expcoeff
+xkabledply( as.table(expcoeff), title = "Exponential of coefficients in Manual Logit Reg" )
+```
+
+In these interpretations, these odds ratio changes are true on average when holding all other variables constant in the model.
+
+
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff[2]` which corresponds to a decrease in default odds of `r (1-expcoeff[2])*100`%. This is expected since having more experience lowers the likelihood that a customer will not pay back their loan. Now, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff[3]` which corresponds to a decrease in default odds of `r (1-expcoeff[3])*100`%. This is also expected since home ownership often implies more responsibility and history with loans and repayments (at least in the US). Now, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff[4]` which corresponds to a decrease in default odds of `r (1-expcoeff[4])*100`%. This is slightly more unexpected, but depending on what "Neither" actually refers to, it may make more sense given that, potentially, the customers have more money that isn't going towards housing that they can put towards their loan. This would help prevent defaulting, hence a decreased likelihood.
+
+For each additional year older someone is, we expect the odds ratio to decrease by `r expcoeff[5]` which corresponds to a decrease in default odds of `r (1-expcoeff[5])*100`%. This makes sense because of similar logic as experience. Going from single to married also decreases the odds ratio by `r expcoeff[6]` which corresponds to a decrease in default odds of `r (1-expcoeff[6])*100`%. The most likely explanation here is that going from single to married means that there are two incomes involved in paying off a loan or that the types of loans taken by married individuals are lower valued and get paid back more frequently. We don't have these variables in our model, unfortunately, so for now they remain speculation. Lastly, for our non-interaction terms, we see that going from not owning a car to owning a car shows an odds ratio decrease of `r expcoeff[7]` which corresponds to a decrease in default odds of `r (1-expcoeff[7])*100`%.
+
+Now, let's examine our interaction variables, which in a logistic regression correspond to a ratio of odds ratios. We're going to interpret these a little bit more loosely than our individual coefficients. For owning a home and age, our likelihood is approximately 1, where the older an individual is, the more impactful it is to start owning a home in terms of decreasing odds of default. Likewise, to move from renting to neither, the older an individual is, the likelier it is that they will default relative to a younger individual doing the same thing.
+
+Finally, moving from renting and single, or renting and married, or single to owning a home and being married, increases the odds ratio by `r expcoeff[11]` which corresponds to an increase in default odds of `r (expcoeff[11]-1)*100`%. One theory for why this may occur is that both owning a home and marriage are big commitments both in life and financially. As a result, it may be that taking on this much commitment at once, puts financial stress on the individual, and therefore increases the odds they default. However, moving from renting and single, or renting and married, or single to neither owning a home nor renting plus being married decreases the odds ratio by `r expcoeff[12]` which corresponds to a decrease in default odds of `r (1-expcoeff[12])*100`%.
+
+Now that we've developed a model manually that's statistically significant, but practically useless, let's see what happens if we use algorithms to try and build the model.
+
+### Backward Selection 
+
+For the backward selection, we started with full model to null model on step() function with AIC and BIC as critarion. We found that model with AIC gradually discarded INCOME and CURRENT_HOUSE_YRS. Whereas BIC additionally discarded CURRENT_JOB_YEARS. As BIC is giving us more compact model we decided to go forward with that model.
+
+Final model by considering BIC:
+
+```{r,results='show'}
+bkwd_bic_model <- glm(Risk_Flag ~ Age+Married.Single+Car_Ownership+House_Ownership+Experience, data = train_reg, family = "binomial")
+summary(bkwd_bic_model)
+```
+
+```{r,results='show'}
+prob_predictbic <- predict(bkwd_bic_model, test_reg, type='response')
+test_reg$prob_bic <- ifelse(prob_predictbic > 0.145,1,0)
+bkwd_h <- roc(Risk_Flag ~ prob_bic, data = test_reg)
+auc(bkwd_h)
+```
+
+The AUC is not that satisfactory at all.
+
+
+```{r,results='show'}
+bkwd_cm <- confusionMatrix(as.factor(test_reg$prob_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+xkabledply(bkwd_cm$table)
+bkwd_accuracy <- (bkwd_cm$table[4:4]+bkwd_cm$table[1:1])/(bkwd_cm$table[4:4]+bkwd_cm$table[1:1]+bkwd_cm$table[2:2]+bkwd_cm$table[3:3])
+bkwd_cm
+```
+
+observing the confusion matrix, it seems this model is very good at predicting zero's but very bad at predicting the defaults.
+
+Let's find out the exponential of cofficients for this model
+
+```{r, results='markup'}
+expcoeff_bk = exp(coef(bkwd_bic_model))
+# expcoeff
+xkabledply( as.table(expcoeff_bk), title = "Exponential of coefficients in Backward Logit Reg" )
+```
+
+
+For each additional age increase, we expect the odds ratio to decrease by `r expcoeff_bk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[2])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_bk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[3])*100`%. If a customer owns a car then odds ratio to decrease by `r expcoeff_bk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[4])*100`%. Moving on to, if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_bk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[5])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_bk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[6])*100`%. For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_bk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_bk[7])*100`%. As expected since having more experience lowers the likelihood that a customer will not pay back their loan.
+
+### Forward Selection
+
+For the forward selection, we started with the null model to the full model with AIC and BIC as criterion. AIC model gradually added Experience, House_ownership, car_ownership, Married.Single, Age, CURRENT_JOB_YRS. On the other hand, BIC model didn't include CURRENT_JOB_YRS.  As BIC is giving us more compact model we decided to go forward with that model.
+
+Final model by considering BIC:
+
+```{r,results='show'}
+fwd_BIC_model <- glm(Risk_Flag ~ Experience + House_Ownership + Car_Ownership + Married.Single + Age, data = train_reg, family = "binomial")
+summary(fwd_BIC_model)
+
+```
+
+```{r,results='show'}
+prob_predictaic <- predict(fwd_BIC_model, test_reg, type='response')
+test_reg$prob_aic <- ifelse(prob_predictaic > 0.115,1,0)
+fwd_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(fwd_h)
+```
+
+Again, this AUC score isn't that satisfactory.
+
+
+```{r,results='show'}
+fwd_cm <- confusionMatrix(as.factor(test_reg$prob_aic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted", "Actual"), positive = '1')
+xkabledply(fwd_cm$table)
+fwd_accuracy <- (fwd_cm$table[4:4]+fwd_cm$table[1:1])/(fwd_cm$table[4:4]+fwd_cm$table[1:1]+fwd_cm$table[2:2]+fwd_cm$table[3:3])
+fwd_cm
+```
+
+Now, from this confusion matrix we can see that this model is predicting defaults pretty well but not that good at predicting the not-defaults.
+
+Let's find out the exponential of coefficients for this model
+
+```{r, results='markup'}
+expcoeff_fk = exp(coef(fwd_BIC_model))
+# expcoeff
+xkabledply( as.table(expcoeff_fk), title = "Exponential of coefficients in Forward Logit Reg" )
+```
+
+For each additional year of experience gained, we expect the odds ratio to decrease by `r expcoeff_fk[2]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[2])*100`%. if a customer moves from renting to owning a house, we would expect the odds ratio to decrease by `r expcoeff_fk[3]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[3])*100`%. On the other hand, going from renting to neither renting nor owning also decreases the odds ratio, on average, by `r expcoeff_fk[4]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[4])*100`%. Moving on to, if a customer owns a car then odds ratio to decrease by `r expcoeff_fk[5]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[5])*100`%. Now, if the customer gets single to married, we can expect the odds ratio to decrease by `r expcoeff_fk[6]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[6])*100`%. Finally, as age increases, we expect the odds ratio to decrease by `r expcoeff_fk[7]` which corresponds to a decrease in default odds of `r (1-expcoeff_fk[7])*100`%. Which makes sense, as age increases more stable life becomes and less possibility to default.
+
+### Exhaustive Selection
+
+```{r,results='show'}
+riskbic <- glm(Risk_Flag ~ Age +
+                 Experience +
+                 Married.Single +
+                 House_Ownership +
+                 Car_Ownership, data = train_reg, family = "binomial")
+summary(riskbic)
+```
+
+```{r,results='show'}
+prob_predict_bic <- predict(riskbic, test_reg, type = 'response')
+
+test_reg$predictedRisk_bic <- ifelse(prob_predict_bic > 0.15, 1, 0)
+
+exh_bic_cm <- confusionMatrix(as.factor(test_reg$predictedRisk_bic), as.factor(test_reg$Risk_Flag), mode = "everything", dnn = c("Predicted","Actual"), positive = '1')
+exh_bic_cm
+```
+
+This exhaustive model is also not that good at predicting the defaults but pretty good at the not-defaults.
+
+```{r,results='show'}
+exh_bic_accuracy <- (exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1])/(exh_bic_cm$table[4:4]+exh_bic_cm$table[1:1]+exh_bic_cm$table[2:2]+exh_bic_cm$table[3:3])
+exh_bic_accuracy
+```
+
+```{r}
+h_exh_bic <- roc(Risk_Flag ~ prob_predict_bic, data=test_reg)
+auc(h_exh_bic) # area-under-curve prefer 0.8 or higher.
+
+plot(h_exh_bic)
+
+```
+Even though, the accuracy is good in this model, the AUC score is pretty bad.
+
+### Decision tree 
+
+At first we tried to make the decision tree with the default parameter settings but it couldn't build a proper tree. It could only predict the zero's but had specificity of 0%.
+
+We built the final decision tree by tuning the minimum splits to 4 and minimum buckets to 2.
+
+```{r,results='show'}
+accuracy_tune <- function(fit) {
+    predict_unseen <- predict(fit, test_reg, type = 'class')
+    table_mat <- table(test_reg$Risk_Flag, predict_unseen)
+    accuracy_Test <- sum(diag(table_mat)) / sum(table_mat)
+    accuracy_Test
+}
+control <- rpart.control(minsplit = 4,
+    minbucket = 2,
+    maxdepth = 30,
+    cp = 0)
+tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
+accuracy_tune(tune_fit)
+```
+Now, this model has a good accuracy score and can predict both defaults and not-defaults.
+
+```{r, results='show'}
+predict_dt_test_tune <- predict(tune_fit, test_reg, type = 'class')
+cmdtt <- table(test_reg$Risk_Flag, predict_dt_test_tune)
+xkabledply( cmdtt, title = "Confusion matrix from Tuned Decision Tree" )
+dt_confusion <- confusionMatrix(predict_dt_test_tune,test_reg$Risk_Flag)
+
+```
+
+
+```{r,results='show'}
+pred <- predict(tune_fit, newdata=test_reg)
+test_reg$prob_dt <- ifelse(pred[,1] > 0.855,0,1)
+dt_h <- roc(Risk_Flag ~ prob_aic, data = test_reg)
+auc(dt_h)
+plot(dt_h)
+
+```
+
+Even though, this model is predicting decently, its AUC score is only 0.53 which indicates it not a good model.
+
+
+### Random Forest 
+
+```{r, results='show'}
+
+rf <- randomForest(Risk_Flag ~ ., data = train_reg, ntree = 100)
+# predicting in test set
+predict_test <- predict(rf, test_reg, type = 'response')
+#confusion matrix  
+
+
+rf_confusion <- confusionMatrix(predict_test,test_reg$Risk_Flag,positive ='1')
+rf_cm <- table( predict_test,test_reg$Risk_Flag)
+xkabledply( rf_cm, title = "Confusion matrix from Random Forest" )
+
+```
+
+
+```{r, results='show'}
+missing_classerr <- mean(predict_test != test_reg$Risk_Flag)
+print(paste('Random Forest Accuracy =', 1 - missing_classerr))
+```
+
+
+```{r, results='show'}
+test_reg$prob_rf <- ifelse(predict_test == 1,1,0)
+rf_h <- roc(Risk_Flag ~ prob_rf, data = test_reg)
+auc(rf_h)
+plot(rf_h)
+
+```
+
+Random forest was our last model to analyze on. We found the accuracy is pretty decent but again the AUC is not that great. But this was highest AUC among all.
+
+
+We've developed models manually, models with various selection, decision tree, and random forests. We compare all of our final models to determine which model is the best. We used the training data to develop our models and test the performance with the test dataset. Our goal was to identify defaulted and not defaulted, in our models positive class (not defaulted) greatly outnumber the negative class (defaulted). Intuitively we know that proclaiming all data being not defaulted isn't helpful and instead we should focus on identifying which cases are going to default, that's why accuracy was not a good measure for assessing model performance. We focus on the ROC_AUC,  precision, and recall rate to evaluate the model. We compromise our accuracy score of the model to obtain a better recall rate and precision. The reason we did this is to obtain a model which is able to predict not only true positive but also true negatives, and reducing the amount false negatives.
+
+Taking into consideration these parameters we determine the Decision Tree was the clear winner with the higher accuracy score, higher recall rate, second-highest precision, and second-highest ROC-AUC score.
+
+# What predictions can we make with our models
+
+With our decision tree model we can predict if the customer will pay their loans or default the loan in a variety of scenarios. We will present 5 scenarios.
+
+### First scenario: 
+
+Married and Single Customers , RENTING a household with NO CAR ownership with an AVERAGE INCOME
+
+```{r,results='show'}
+
+#tune_fit <- rpart(Risk_Flag~., data = train_reg, method = 'class', control = control)
+
+newdata1 <- with(loandata, data.frame(Income = mean(Income) ,Age = mean(Age), Experience = round(mean(Experience)) , Married.Single = c('Single','Married'), House_Ownership = 'Renting', Car_Ownership = 'No' , CURRENT_JOB_YRS = round(mean(CURRENT_JOB_YRS)), CURRENT_HOUSE_YRS = round(mean(CURRENT_HOUSE_YRS))))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+
+newdata1
+```
+
+For customers with single and married status with a rented household ,no car ownership, and with an average income the prediction in our model is that they wont defaulted. 
+
+
+### Second Scenario: 
+
+Married and Single Customers, RENTING with a minimum yearly salary in their 30s with NO CAR
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  70000,Age = 30, Experience = round(mean(Experience)) , Married.Single = c('Single','Married'), House_Ownership = 'Renting', Car_Ownership = 'No' , CURRENT_JOB_YRS = round(mean(CURRENT_JOB_YRS)), CURRENT_HOUSE_YRS = round(mean(CURRENT_HOUSE_YRS))))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+
+
+According to our decision tree, if you are in your 30s with low income and no car, it doesnt matter if you are married or single you will most likely default the loan. *(70,000Rs is India minimun yearly salary)
+
+
+### Third Scenario: 
+
+Married and Single Customers with a MINIMUM yearly salary in their 30s with a CAR
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  70000,Age = 30, Experience = round(mean(Experience)) , Married.Single = 'Married', House_Ownership = 'Renting', Car_Ownership = 'Yes' , CURRENT_JOB_YRS = round(mean(CURRENT_JOB_YRS)), CURRENT_HOUSE_YRS = round(mean(CURRENT_HOUSE_YRS))))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+
+According to our decision tree, if you are married in your 30s with minimun yearly income with a car ownership, you will most likely not default the loan. This is very interesting which shows how being married and having a car can change the prediction of our model. 
+
+### Fourth Scenario:
+
+Single customer, right out of the college with NO EXPERIENCE with a CAR and an average INCOME
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  mean(loandata$Income),Age = 23, Experience = 0 , Married.Single = 'Single', House_Ownership = 'Renting', Car_Ownership = 'Yes' , CURRENT_JOB_YRS = 0, CURRENT_HOUSE_YRS = 1))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+Our model is predicting if you have an average income right out of college with no job experience you will most likely default the loan. *(the average salary in our dataset is 5,000,000Rs)
+
+### Fifth Scenario:
+
+Single young adult customer, MINIMUM EXPERIENCE with CAR and an AVERAGE INCOME a.k.a Ricardo Diaz 
+
+
+```{r,results='show'}
+newdata1 <- with(loandata, data.frame(Income =  mean(loandata$Income),Age = 26, Experience = 2 , Married.Single = 'Single', House_Ownership = 'Renting', Car_Ownership = 'Yes' , CURRENT_JOB_YRS = 2, CURRENT_HOUSE_YRS = 1))
+
+newdata1$Risk_Flag <- predict(tune_fit, newdata = newdata1, type = "class")
+newdata1
+
+```
+
+According to the model, with minimum experience , renting a property, with car ownership and an average income. The member of this group, Ricardo Diaz, its most likely to default the loan. The model clearly doesnt know Ricardo is pursuing a master in Data Science. 
+
+
+# How reliable are our results
+
+Now that we've developed our models and have done some predictions, let's determine how reliable our models are, and if should be using them in a business context. 
+
+```{r,results='show'}
+performance_data <- matrix(c(manual_cm$byClass[1],bkwd_cm$byClass[1],fwd_cm$byClass[1],exh_bic_cm$byClass[1],dt_confusion$byClass[1],rf_confusion$byClass[1],manual_cm$byClass[2],bkwd_cm$byClass[2],fwd_cm$byClass[2],exh_bic_cm$byClass[2],dt_confusion$byClass[2],rf_confusion$byClass[2], manual_cm$byClass[5],bkwd_cm$byClass[5],fwd_cm$byClass[5],exh_bic_cm$byClass[5],dt_confusion$byClass[5],rf_confusion$byClass[5], manual_accuracy,bkwd_accuracy,fwd_accuracy,exh_bic_accuracy,accuracy_tune(tune_fit),1-missing_classerr, auc(h_manual), auc(bkwd_h), auc(fwd_h), auc(h_exh_bic), auc(dt_h), auc(rf_h)),ncol=6,byrow=TRUE)
+colnames(performance_data) <- c("Manual","Backward","Forward","Exhaustive","Decision Tree","Random Forest")
+rownames(performance_data) <- c("Sensitivity/Recall Rate","Specificity","Precision", "Accuracy", "ROC-AUC")
+performance_table <- as.table(performance_data)
+
+xkabledply(performance_table)
+
+```
+
+As we can see in this table, our decision tree model produced the highest sensitivity/recall-rate of `r dt_confusion$byClass[1]` and our random forest model produced the worst at `r rf_cm[4:4]/(rf_cm[4:4]+rf_cm[2:2])`. In terms of specificity, our random forest model had the highest specificity at `r rf_cm[1:1]/(rf_cm[1:1]+rf_cm[1,2])` and our forward selection method had the lowest specificity at `r fwd_cm$byClass[2]`. For precision, our decision tree model had the highest precision at `r dt_confusion$byClass[5]` and our forward selection model had the lowest precision at `r fwd_cm$byClass[5]`.  
+
+
+In order to feel comfortable using this model in a business setting, we would need to see a high sensitivity rate. As a bank, it is okay if we accidentally predict some good customers as defaulting. Obviously we don't want to predict too many falsely in those regards, but it's far less costly than predicting a defaulting customer as non-defaulting. As a result, we would want a sensitivity rate in the 90s so that we're correctly predicting at elast 90% of the true defaulting customer correctly. Fortunately, the highest sensitivity we're seeing is `r dt_confusion$byClass[1]`, which is within our usable value range, but we would also want to see the accuracy and ROC-AUC before making a firm decision on reliability.  
+
+
+In terms of accuracy,  our decision tree model was the most accurate at  `raccuracy_tune(tune_fit)*100`%, while our forward selection model was the least accurate at `r fwd_accuracy *100`%. Lastly, our exhaustive model had the highest ROC-AUC value of `r auc(h_exh_bic)` while our manual regression and backward selection models jointly had the lowest ROC-AUC values of `r auc(h_manual)`.  
+
+
+Based on this information alone, we can say that all of our models are not reliable. All of them have low ROC-AUC values, far below the 0.8 threshold we would require to consider a model reliable, and, as mentioned earlier, all have too low of a sensitivity to even be considered.  
+
+
+While we could further consider the Hoslem and Lemshow Goodness of Fit, this wouldn't change our assumption of reliability. A good fit simply means that the coefficients are appropriate, but doesn't change the lack of predictive power in a useful manner. Likewise, we could use the McFadden pseudo $R^2$ values to assess how much variation in outcome is explained by our models, but again, this will not change our determination of lack of reliability in these models, so we will forgo those analyses here for sake of brevity.  
+
+
+
+# Ideal Next Steps
+
+Despite the lack of reliability in our models, there are some additional pieces of information that would allow us to improve our models or at least control the limitations. First would simply be additional variables. Some potential variables include loan amount, loan duration, loan type, etc. These would potentially help us classify our loans and give us more reliability within certian loan types, even if we can't necessarily get reliability in all loan types from the same model. This means we could create different models (even different types of models) for each loan structure to help assess risk within that.  
+
+
+Another variable that'd be helpful in our analysis would be gender. Gender is highly predictive of consumer loan behavior in the United States (and is illegal to use in these types of models due to discrimination laws). It would be interesting to determine if this variable is equally predictive in India.  
+
+
+Additional analysis that may allow these models to improve would be some sub classifications within the existing variables. For example, the variable profession had several thousand different inputs. If there were a way we could create an algorithm to classify the occupations of these consumers (ie into STEM jobs, self employed, manual labor, etc.), that may give us another angle to analyze consumers. Another option would be to again bucket the geography fields (city and state) to again bucket customers. In the United States, geography is a major risk predictor (primarily due to racial divisions and large scale economic impacts in regions such as natural disasters, minimum wage limits, single industry towns, etc) even though it is, much like gender, illegal to use for banking decisions. Creating categories such as urban or rural in our dataset would allow us to understand geographic impacts and take into consideration different living conditions for consumers in those regions. Like profession, however, there were too many inputs to manually create this field, so we'd need a geographical mapper tool or an algorithm to determine which consumer would be bucketed in each population.  
+
+
+Using these illegal variables would be more of an exercise in model development and allow us to build highly reliable models, but, at least in the United States, we would be unable to use such models in practice.  
+
+One last thing that would've helped is cloud computing capabilities. Running complex models such as decision trees and random forests is difficult on any laptop. We would love to run more complex and powerful version of the models that we created in the cloud with expansive processing power, but sadly our laptops are unable to handle models of that scale.  
+
+In terms of limitations in our dataset and analysis, because we had such imbalanced data, we had to be willing to sacrifice accuracy for sensitivity. Essentially we were able to obtain 87% accuracy instantly, solely by predicting 0 defaults. In banking, this is a constant challenge. For example, in fraud, we assume that 99% of transactions are not fraudulent and 1% are fraudulent. Any model developer looking purely at the numbers, would be thrilled to obtain a model with 99% accuracy. However, if the entire 1% inaccuracy is all of the fraudulent transactions, that creates major problems for the bank. So, we have to be willing to sacrifice some of that accuracy in order to actually solve the issue the model is being used for.  
+
+In our case, we want the model to predict defaulting customers at the time of application so that we can avoid lending to them in favor of someone who is predicted to not default. We'd rather turn down someone who falsely alerted as defaulting, than accept someone who false alerted as non defaulting. What this means is that we need to optimize our model for the highest accuracy under the constraint of maximizing sensitivity. Based on how logistic regression models work, we don't have that capability in an automated fashion. Ideally we would use some more complicated machine learning algorithsm to allow us to optimize under these constraints.
+
+One method to fix our impbalanced sample could be to use bootstrapping in order to increase the sample size of the defaulted population. This could work given that our defaulted sample is still fairly large, even if it represents a smaller portion of the data. However, doing this may skew the model into predicting more defaults and wouldn't give us a real sense of prediction power and reliability because we're using simulated data as our target.
+
+
+
+# References
+Durkheimer, M. (2019, August 22). Millennial men more likely than women to default on student debt. Forbes. Retrieved November 5, 2021, from https://www.forbes.com/sites/michaeldurkheimer/2017/09/25/millennial-men-more-likely-than-women-to-default-on-student-debt/?sh=4d8ba5089ea8.  
+
+Herron, J. (2014, April 4). Men, women and debt: Does gender matter? Bankrate. Retrieved November 7, 2021, from https://www.bankrate.com/personal-finance/debt/men-women-and-debt-does-gender-matter/.  
+
+Surana, S. (2021, August 15). Loan Prediction Based on Customer Behavior | Kaggle. Kaggle. Retrieved November 8, 2021, from https://www.kaggle.com/subhamjain/loan-prediction-based-on-customer-behavior/discussion.
+
