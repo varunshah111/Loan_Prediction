@@ -1,5 +1,4 @@
 # Team_2_America
-Midterm Project
 
 Team 2 Project Proposal
 Cooper Atkins, Ricardo Diaz, Varun Shah
