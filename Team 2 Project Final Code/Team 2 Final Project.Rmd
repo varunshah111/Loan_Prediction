@@ -1,6 +1,6 @@
 ---
 title: "Final Project Team 2"
-authors: "By: Cooper, Nusrat, Ricardo, and Varun"
+authors: "By: Cooper Atkins, Nusrat, Ricardo Diaz, and Varun Shah"
 date: "`r Sys.Date()`"
 output:
   html_document:
